@@ -177,25 +177,4 @@ export const driveApi = {
 
   abortUpload: (sessionId: string) =>
     mutator<void>({ url: `/drive/upload-sessions/${sessionId}`, method: 'DELETE' }),
-
-  listUnassignedMeetings: () =>
-    mutator<{
-      meetings: Array<{
-        id: string;
-        title: string;
-        platform: string;
-        meetingId: string;
-        startAt: string | null;
-        createdAt: string;
-        _count: { minutes: number };
-      }>;
-      organizations: Array<{ id: string; name: string; code: string }>;
-    }>({ url: '/meetings/organization/unassigned', method: 'GET' }),
-
-  assignMeetingOrganization: (meetingIds: string[], orgId: string) =>
-    mutator<{ updated: number }>({
-      url: '/meetings/organization/assign',
-      method: 'PATCH',
-      data: { meetingIds, orgId },
-    }),
 };
