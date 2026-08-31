@@ -24,6 +24,7 @@ import { taskRoutes } from '../../features/tasks';
 import { errorRoutes } from '../../features/errors';
 import { projectRoutes } from '../../features/projects';
 import { profitSharingRoutes } from '../../features/profit-sharing';
+import { driveRoutes } from '../../features/drive';
 
 export const routes: RouteConfig[] = [
   ...authRoutes,
@@ -33,6 +34,7 @@ export const routes: RouteConfig[] = [
   ...projectRoutes,
   ...meetingRoutes,
   ...minuteRoutes,
+  ...driveRoutes,
   ...reportRoutes,
   ...taskRoutes,
   profitSharingRoutes,

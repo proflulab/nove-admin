@@ -16,6 +16,7 @@ import type {
   SpeakerSummaryListResponse,
   TranscriptSegment,
 } from '../model/types';
+import type { MinuteDriveFile } from '../../drive/model/types';
 
 export const minuteApi = {
   list: (params: MinuteListParams): Promise<MinuteListResponse> =>
@@ -67,5 +68,11 @@ export const minuteApi = {
       url: `/meetings/${meetingId}/participants`,
       method: 'GET',
       params,
+    }),
+
+  getFiles: (minuteId: string): Promise<MinuteDriveFile[]> =>
+    mutator<MinuteDriveFile[]>({
+      url: `/minutes/${minuteId}/files`,
+      method: 'GET',
     }),
 };

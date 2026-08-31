@@ -1,4 +1,4 @@
-export type IntegrationModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop';
+export type IntegrationModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop' | 'drive';
 
 export type IntegrationSource = 'database' | 'default';
 
@@ -64,12 +64,30 @@ export interface WechatShopConfig {
   apiBaseUrl?: string;
 }
 
+export interface DriveConfig {
+  downloadUrlExpiresSeconds?: number;
+  recycleRetentionDays?: number;
+  allowedExtensions?: string[];
+  imageMaxMiB?: number;
+  documentMaxMiB?: number;
+  audioMaxMiB?: number;
+  videoMaxMiB?: number;
+  malwareScanProvider?: 'ALIYUN_SAS' | 'CLAMAV';
+  aliyunSasRegionId?: string;
+  scanTimeoutMs?: number;
+  scanPollIntervalMs?: number;
+  clamAvHost?: string;
+  clamAvPort?: number;
+  clamAvTimeoutMs?: number;
+}
+
 export type IntegrationConfigMap = {
   mail: MailConfig;
   ai: AiConfig;
   'tencent-meeting': TencentMeetingConfig;
   lark: LarkConfig;
   'wechat-shop': WechatShopConfig;
+  drive: DriveConfig;
 };
 
 export interface SaveIntegrationResult {

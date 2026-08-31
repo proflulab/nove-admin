@@ -1,5 +1,6 @@
 import {
   ApiOutlined,
+  CloudOutlined,
   EditOutlined,
   MailOutlined,
   QuestionCircleOutlined,
@@ -44,6 +45,7 @@ import type {
   IntegrationDetail,
   IntegrationSource,
   IntegrationSummary,
+  DriveConfig,
   LarkConfig,
   MailConfig,
   IntegrationConfigMap,
@@ -87,6 +89,12 @@ const MODULE_META: Record<
     title: '微信小店配置',
     description: '用于微信小店回调验证和订单同步',
     icon: <ShopOutlined />,
+  },
+  drive: {
+    label: '云盘与会议文件',
+    title: '云盘安全配置',
+    description: '控制文件白名单、容量限制和病毒扫描服务',
+    icon: <CloudOutlined />,
   },
 };
 
@@ -286,6 +294,7 @@ export function IntegrationsManagement() {
   const [tencentForm] = Form.useForm<TencentMeetingConfig>();
   const [larkForm] = Form.useForm<LarkConfig>();
   const [wechatForm] = Form.useForm<WechatShopConfig>();
+  const [driveForm] = Form.useForm<DriveConfig>();
 
   const summaryMap = useMemo(
     () => new Map(summaries.map((summary) => [summary.module, summary])),
@@ -299,8 +308,9 @@ export function IntegrationsManagement() {
       if (module === 'tencent-meeting') tencentForm.setFieldsValue(value as TencentMeetingConfig);
       if (module === 'lark') larkForm.setFieldsValue(value as LarkConfig);
       if (module === 'wechat-shop') wechatForm.setFieldsValue(value as WechatShopConfig);
+      if (module === 'drive') driveForm.setFieldsValue(value as DriveConfig);
     },
-    [aiForm, larkForm, mailForm, tencentForm, wechatForm]
+    [aiForm, driveForm, larkForm, mailForm, tencentForm, wechatForm]
   );
 
   const loadSummaries = useCallback(async () => {
@@ -349,6 +359,8 @@ export function IntegrationsManagement() {
         return buildLarkConfigPayload(await larkForm.validateFields());
       case 'wechat-shop':
         return buildWechatShopConfigPayload(await wechatForm.validateFields());
+      case 'drive':
+        return driveForm.validateFields();
     }
   };
 
@@ -421,6 +433,11 @@ export function IntegrationsManagement() {
       label: '交易集成',
       children: [menuItem('wechat-shop', summaryMap.get('wechat-shop'))],
     },
+    {
+      type: 'group' as const,
+      label: '存储服务',
+      children: [menuItem('drive', summaryMap.get('drive'))],
+    },
   ];
 
   const isEditing = canWrite && editingModule === activeModule;
@@ -463,6 +480,7 @@ export function IntegrationsManagement() {
               {activeModule === 'tencent-meeting' && <TencentMeetingFields form={tencentForm} />}
               {activeModule === 'lark' && <LarkFields form={larkForm} />}
               {activeModule === 'wechat-shop' && <WechatShopFields form={wechatForm} />}
+              {activeModule === 'drive' && <DriveFields form={driveForm} />}
             </>
           ) : (
             <ReadonlyConfigView module={activeModule} value={details[activeModule]?.value} />
@@ -692,6 +710,128 @@ function WechatShopFields({
       <Form.Item label="API Base URL" name="apiBaseUrl" rules={[{ required: true, type: 'url' }]}>
         <Input />
       </Form.Item>
+    </Form>
+  );
+}
+
+function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfig>>[0] }) {
+  return (
+    <Form
+      className="integrations-form"
+      form={form}
+      layout="vertical"
+      initialValues={{
+        downloadUrlExpiresSeconds: 600,
+        recycleRetentionDays: 30,
+        imageMaxMiB: 20,
+        documentMaxMiB: 100,
+        audioMaxMiB: 2048,
+        videoMaxMiB: 20480,
+        malwareScanProvider: 'ALIYUN_SAS',
+        aliyunSasRegionId: 'cn-beijing',
+        scanTimeoutMs: 300000,
+        scanPollIntervalMs: 3000,
+        clamAvPort: 3310,
+        clamAvTimeoutMs: 600000,
+      }}
+    >
+      <Alert
+        type="warning"
+        showIcon
+        title="危险类型（宏文件、压缩包、脚本、可执行文件）由服务端永久禁止；此处只能在安全白名单内进一步收窄。"
+      />
+      <Divider titlePlacement="start">文件策略</Divider>
+      <Form.Item
+        label="允许扩展名"
+        name="allowedExtensions"
+        tooltip="留空表示启用服务端全部安全白名单"
+      >
+        <Select mode="tags" tokenSeparators={[',', ' ']} placeholder="例如 .pdf .docx .mp4" />
+      </Form.Item>
+      <Row gutter={16}>
+        <Col xs={12} md={6}>
+          <Form.Item label="图片上限 MiB" name="imageMaxMiB">
+            <InputNumber min={1} max={20} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Item label="文档上限 MiB" name="documentMaxMiB">
+            <InputNumber min={1} max={100} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Item label="音频上限 MiB" name="audioMaxMiB">
+            <InputNumber min={1} max={2048} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Item label="视频上限 MiB" name="videoMaxMiB">
+            <InputNumber min={1} max={20480} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Alert
+        type="info"
+        showIcon
+        title="办公文档、图片、HTML/SVG 必须扫描；音视频按文件头和来源校验。阿里云 SDK 单文件上限为 100 MiB。"
+      />
+      <Divider titlePlacement="start">病毒扫描</Divider>
+      <Row gutter={16}>
+        <Col xs={24} md={8}>
+          <Form.Item label="病毒扫描 Provider" name="malwareScanProvider">
+            <Select
+              options={[
+                { label: '阿里云安全中心（生产推荐）', value: 'ALIYUN_SAS' },
+                { label: 'ClamAV（本地/专用节点）', value: 'CLAMAV' },
+              ]}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item label="阿里云 SAS 地域" name="aliyunSasRegionId">
+            <Input placeholder="cn-beijing" />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={4}>
+          <Form.Item label="云扫描超时 ms" name="scanTimeoutMs">
+            <InputNumber min={30000} max={1800000} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={4}>
+          <Form.Item label="轮询间隔 ms" name="scanPollIntervalMs">
+            <InputNumber min={1000} max={30000} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item label="ClamAV 主机（Provider 为 ClamAV 时）" name="clamAvHost">
+            <Input placeholder="clamav.internal" />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Item label="ClamAV 端口" name="clamAvPort">
+            <InputNumber min={1} max={65535} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12} md={6}>
+          <Form.Item label="ClamAV 超时 ms" name="clamAvTimeoutMs">
+            <InputNumber min={1000} max={3600000} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
+      <Row gutter={16}>
+        <Col xs={12}>
+          <Form.Item label="下载 URL 有效期（秒）" name="downloadUrlExpiresSeconds">
+            <InputNumber min={60} max={3600} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12}>
+          <Form.Item label="回收站保留天数" name="recycleRetentionDays">
+            <InputNumber min={1} max={365} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
     </Form>
   );
 }

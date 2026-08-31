@@ -20,6 +20,8 @@ const PROVIDER_LABELS: Record<string, string> = {
   ark: '火山方舟',
   openai: 'OpenAI',
   custom: '自定义兼容服务',
+  ALIYUN_SAS: '阿里云安全中心',
+  CLAMAV: 'ClamAV',
 };
 
 const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
@@ -126,6 +128,32 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
     {
       title: 'API 地址',
       fields: [{ key: 'apiBaseUrl', label: 'API Base URL', fullWidth: true }],
+    },
+  ],
+  drive: [
+    {
+      title: '文件策略',
+      fields: [
+        { key: 'allowedExtensions', label: '允许扩展名', fullWidth: true },
+        { key: 'imageMaxMiB', label: '图片上限 MiB' },
+        { key: 'documentMaxMiB', label: '文档上限 MiB' },
+        { key: 'audioMaxMiB', label: '音频上限 MiB' },
+        { key: 'videoMaxMiB', label: '视频上限 MiB' },
+        { key: 'downloadUrlExpiresSeconds', label: '下载 URL 有效期（秒）' },
+        { key: 'recycleRetentionDays', label: '回收站保留天数' },
+      ],
+    },
+    {
+      title: '病毒扫描',
+      fields: [
+        { key: 'malwareScanProvider', label: '扫描服务', kind: 'provider' },
+        { key: 'aliyunSasRegionId', label: '阿里云 SAS 地域' },
+        { key: 'scanTimeoutMs', label: '云扫描超时 ms' },
+        { key: 'scanPollIntervalMs', label: '轮询间隔 ms' },
+        { key: 'clamAvHost', label: 'ClamAV 主机' },
+        { key: 'clamAvPort', label: 'ClamAV 端口' },
+        { key: 'clamAvTimeoutMs', label: 'ClamAV 超时 ms' },
+      ],
     },
   ],
 };
