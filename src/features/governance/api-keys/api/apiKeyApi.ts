@@ -23,7 +23,7 @@ import {
   apiKeyControllerUpdateKey,
   apiKeyControllerRevokeKey,
   apiKeyControllerRotateKey,
-} from '../../../../shared/lib/api/orval/business/admin-api-keys';
+} from '../../../../shared/lib/api/orval/business/admin-api-key';
 
 export const apiKeyApi = {
   list: async (params: ApiKeyListParams): Promise<ApiKeyListData> => {
