@@ -35,6 +35,7 @@ import { PERMISSIONS } from '../../../../shared/utils/permissions';
 import { orderApi } from '../api/orderApi';
 import { OrderChannelSelect } from '../components/OrderChannelSelect';
 import { OrderProductSelect } from '../components/OrderProductSelect';
+import { ORDER_STATUS_OPTIONS } from '../components/orderStatusOptions';
 import { OrderUserSelect } from '../components/OrderUserSelect';
 import type {
   CreateOrder,
@@ -76,14 +77,6 @@ interface OrderFormValues {
   paymentProvider?: PaymentProvider;
   providerTradeNo?: string;
 }
-
-const STATUS_OPTIONS: Array<{ label: string; value: OrderStatus; color: string }> = [
-  { label: '未支付', value: 'UNPAID', color: 'default' },
-  { label: '已支付', value: 'PAID', color: 'processing' },
-  { label: '已取消', value: 'CANCELLED', color: 'warning' },
-  { label: '已退款', value: 'REFUNDED', color: 'error' },
-  { label: '已完成', value: 'COMPLETED', color: 'success' },
-];
 
 const CURRENCY_OPTIONS: Array<{ label: string; value: Currency }> = [
   { label: 'CNY', value: 'CNY' },
@@ -136,7 +129,7 @@ function formatMoney(amount: number, currency: Currency) {
 }
 
 function getStatusMeta(status: OrderStatus) {
-  return STATUS_OPTIONS.find((item) => item.value === status) || STATUS_OPTIONS[0];
+  return ORDER_STATUS_OPTIONS.find((item) => item.value === status) || ORDER_STATUS_OPTIONS[0];
 }
 
 function buildPayload(values: OrderFormValues): CreateOrder {
@@ -413,7 +406,7 @@ export function OrderManagement() {
             <Select
               size="small"
               value={status}
-              options={STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
+              options={ORDER_STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
               style={{ width: 104 }}
               disabled={statusMutation.isPending}
               onClick={(event) => event.stopPropagation()}
@@ -523,7 +516,7 @@ export function OrderManagement() {
           allowClear
           placeholder="状态"
           style={{ width: 140 }}
-          options={STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
+          options={ORDER_STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
           onChange={(value) => handleFilterChange('status', value)}
         />
         <Select
@@ -634,7 +627,9 @@ export function OrderManagement() {
                 label="状态"
                 rules={[{ required: true, message: '请选择状态' }]}
               >
-                <Select options={STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))} />
+                <Select
+                  options={ORDER_STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>

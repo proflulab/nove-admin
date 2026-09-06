@@ -12,7 +12,7 @@ export type Currency =
   | 'AUD'
   | 'CAD';
 
-export type OrderStatus = 'UNPAID' | 'PAID' | 'CANCELLED' | 'REFUNDED' | 'COMPLETED';
+export type OrderStatus = 'UNPAID' | 'PAID' | 'CANCELLED' | 'COMPLETED';
 
 export type PaymentProvider =
   | 'STRIPE'
