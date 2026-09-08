@@ -245,7 +245,11 @@ function ConfigPanel({
           <div className="integrations-actions">
             <Popconfirm
               title={`删除${meta.label}数据库配置？`}
-              description="删除后服务将变为未配置，重启时也不会从环境变量恢复。"
+              description={
+                module === 'drive'
+                  ? '删除后将恢复默认文件策略；扫描服务仍按部署配置选择。'
+                  : '删除后服务将变为未配置，重启时也不会从环境变量恢复。'
+              }
               okText="删除"
               cancelText="取消"
               disabled={!canDelete}
@@ -258,9 +262,11 @@ function ConfigPanel({
             </Popconfirm>
             <Space>
               <Button onClick={onCancelEdit}>取消编辑</Button>
-              <Button loading={testing} onClick={onTest}>
-                测试连接
-              </Button>
+              {module !== 'drive' && (
+                <Button loading={testing} onClick={onTest}>
+                  测试连接
+                </Button>
+              )}
               <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={onSave}>
                 保存配置
               </Button>

@@ -1,4 +1,10 @@
-export type IntegrationModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop' | 'drive';
+export type IntegrationModule =
+  | 'mail'
+  | 'ai'
+  | 'tencent-meeting'
+  | 'lark'
+  | 'wechat-shop'
+  | 'drive';
 
 export type IntegrationSource = 'database' | 'default';
 

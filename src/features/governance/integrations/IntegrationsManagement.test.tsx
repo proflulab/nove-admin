@@ -194,4 +194,16 @@ describe('IntegrationsManagement', () => {
     expect(screen.getByText('https://api.weixin.qq.com')).toBeInTheDocument();
     expect(screen.getAllByText('未配置').length).toBeGreaterThan(0);
   }, 15_000);
+
+  it('edits drive policies without a default organization or unsupported connection test', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('云盘与会议文件'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('drive'));
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText('允许扩展名')).toBeInTheDocument();
+    expect(screen.queryByLabelText('会议同步默认组织 ID')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
+  });
 });
