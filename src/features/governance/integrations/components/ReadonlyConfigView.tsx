@@ -154,6 +154,8 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
         { key: 'recycleRetentionDays', label: '回收站保留天数' },
       ],
     },
+  ],
+  'file-scanning': [
     {
       title: '病毒扫描',
       fields: [

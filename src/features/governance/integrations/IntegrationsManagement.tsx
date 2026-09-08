@@ -7,6 +7,7 @@ import {
   ReloadOutlined,
   RobotOutlined,
   SaveOutlined,
+  SecurityScanOutlined,
   ShopOutlined,
   VideoCameraOutlined,
 } from '@ant-design/icons';
@@ -46,6 +47,7 @@ import type {
   IntegrationSource,
   IntegrationSummary,
   DriveConfig,
+  FileScanningConfig,
   LarkConfig,
   MailConfig,
   IntegrationConfigMap,
@@ -92,9 +94,15 @@ const MODULE_META: Record<
   },
   drive: {
     label: '云盘与会议文件',
-    title: '云盘安全配置',
-    description: '控制文件白名单、容量限制和病毒扫描服务',
+    title: '云盘文件策略',
+    description: '控制文件白名单、容量限制和下载回收站策略',
     icon: <CloudOutlined />,
+  },
+  'file-scanning': {
+    label: '病毒扫描',
+    title: '病毒扫描服务配置',
+    description: '选择扫描引擎并配置 ClamAV 或阿里云安全中心参数',
+    icon: <SecurityScanOutlined />,
   },
 };
 
@@ -301,6 +309,7 @@ export function IntegrationsManagement() {
   const [larkForm] = Form.useForm<LarkConfig>();
   const [wechatForm] = Form.useForm<WechatShopConfig>();
   const [driveForm] = Form.useForm<DriveConfig>();
+  const [fileScanningForm] = Form.useForm<FileScanningConfig>();
 
   const summaryMap = useMemo(
     () => new Map(summaries.map((summary) => [summary.module, summary])),
@@ -444,6 +453,11 @@ export function IntegrationsManagement() {
       label: '存储服务',
       children: [menuItem('drive', summaryMap.get('drive'))],
     },
+    {
+      type: 'group' as const,
+      label: '安全服务',
+      children: [menuItem('file-scanning', summaryMap.get('file-scanning'))],
+    },
   ];
 
   const isEditing = canWrite && editingModule === activeModule;
@@ -487,6 +501,7 @@ export function IntegrationsManagement() {
               {activeModule === 'lark' && <LarkFields form={larkForm} />}
               {activeModule === 'wechat-shop' && <WechatShopFields form={wechatForm} />}
               {activeModule === 'drive' && <DriveFields form={driveForm} />}
+              {activeModule === 'file-scanning' && <FileScanningFields form={fileScanningForm} />}
             </>
           ) : (
             <ReadonlyConfigView module={activeModule} value={details[activeModule]?.value} />
@@ -722,8 +737,6 @@ function WechatShopFields({
 }
 
 function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfig>>[0] }) {
-  const scanProvider = Form.useWatch('malwareScanProvider', form);
-
   return (
     <Form
       className="integrations-form"
@@ -736,11 +749,6 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
         documentMaxMiB: 100,
         audioMaxMiB: 2048,
         videoMaxMiB: 20480,
-        aliyunSasRegionId: 'cn-beijing',
-        scanTimeoutMs: 300000,
-        scanPollIntervalMs: 3000,
-        clamAvPort: 3310,
-        clamAvTimeoutMs: 600000,
       }}
     >
       <Alert
@@ -778,7 +786,43 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
           </Form.Item>
         </Col>
       </Row>
-      <Divider titlePlacement="start">病毒扫描</Divider>
+      <Divider titlePlacement="start">下载与回收站</Divider>
+      <Row gutter={16}>
+        <Col xs={12}>
+          <Form.Item label="下载 URL 有效期（秒）" name="downloadUrlExpiresSeconds">
+            <InputNumber min={60} max={3600} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+        <Col xs={12}>
+          <Form.Item label="回收站保留天数" name="recycleRetentionDays">
+            <InputNumber min={1} max={365} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
+    </Form>
+  );
+}
+
+function FileScanningFields({
+  form,
+}: {
+  form: ReturnType<typeof Form.useForm<FileScanningConfig>>[0];
+}) {
+  const scanProvider = Form.useWatch('malwareScanProvider', form);
+
+  return (
+    <Form
+      className="integrations-form"
+      form={form}
+      layout="vertical"
+      initialValues={{
+        aliyunSasRegionId: 'cn-beijing',
+        scanTimeoutMs: 300000,
+        scanPollIntervalMs: 3000,
+        clamAvPort: 3310,
+        clamAvTimeoutMs: 600000,
+      }}
+    >
       <Form.Item label="扫描服务" name="malwareScanProvider" extra="未指定时跟随服务端配置。">
         <Select
           placeholder="跟随服务端配置"
@@ -822,19 +866,6 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
         <Col xs={12} md={6}>
           <Form.Item label="扫描超时（毫秒）" name="clamAvTimeoutMs">
             <InputNumber min={1000} max={3600000} style={{ width: '100%' }} />
-          </Form.Item>
-        </Col>
-      </Row>
-      <Divider titlePlacement="start">下载与回收站</Divider>
-      <Row gutter={16}>
-        <Col xs={12}>
-          <Form.Item label="下载 URL 有效期（秒）" name="downloadUrlExpiresSeconds">
-            <InputNumber min={60} max={3600} style={{ width: '100%' }} />
-          </Form.Item>
-        </Col>
-        <Col xs={12}>
-          <Form.Item label="回收站保留天数" name="recycleRetentionDays">
-            <InputNumber min={1} max={365} style={{ width: '100%' }} />
           </Form.Item>
         </Col>
       </Row>

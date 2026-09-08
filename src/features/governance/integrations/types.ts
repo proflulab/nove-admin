@@ -4,7 +4,8 @@ export type IntegrationModule =
   | 'tencent-meeting'
   | 'lark'
   | 'wechat-shop'
-  | 'drive';
+  | 'drive'
+  | 'file-scanning';
 
 export type IntegrationSource = 'database' | 'default';
 
@@ -78,6 +79,9 @@ export interface DriveConfig {
   documentMaxMiB?: number;
   audioMaxMiB?: number;
   videoMaxMiB?: number;
+}
+
+export interface FileScanningConfig {
   malwareScanProvider?: 'ALIYUN_SAS' | 'CLAMAV';
   aliyunSasRegionId?: string;
   scanTimeoutMs?: number;
@@ -94,6 +98,7 @@ export type IntegrationConfigMap = {
   lark: LarkConfig;
   'wechat-shop': WechatShopConfig;
   drive: DriveConfig;
+  'file-scanning': FileScanningConfig;
 };
 
 export interface SaveIntegrationResult {
