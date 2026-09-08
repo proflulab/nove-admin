@@ -1,18 +1,18 @@
-export type SystemConfigModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop';
+export type IntegrationModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop';
 
-export type ConfigSource = 'database' | 'default';
+export type IntegrationSource = 'database' | 'default';
 
-export interface ConfigSummary {
+export interface IntegrationSummary {
   readonly orgId: string;
-  module: SystemConfigModule;
+  module: IntegrationModule;
   configured: boolean;
-  source: ConfigSource;
+  source: IntegrationSource;
   updatedAt: string | null;
   environmentImportedAt: string | null;
   environmentImportedFields: string[];
 }
 
-export interface ConfigDetail<T> extends ConfigSummary {
+export interface IntegrationDetail<T> extends IntegrationSummary {
   value: T;
 }
 
@@ -64,7 +64,7 @@ export interface WechatShopConfig {
   apiBaseUrl?: string;
 }
 
-export type ModuleConfigMap = {
+export type IntegrationConfigMap = {
   mail: MailConfig;
   ai: AiConfig;
   'tencent-meeting': TencentMeetingConfig;
@@ -72,14 +72,14 @@ export type ModuleConfigMap = {
   'wechat-shop': WechatShopConfig;
 };
 
-export interface SaveConfigResult {
+export interface SaveIntegrationResult {
   readonly orgId: string;
   success: boolean;
   message: string;
   restartRequired: boolean;
 }
 
-export interface TestConfigResult {
+export interface TestIntegrationResult {
   readonly orgId: string;
   success: boolean;
   message: string;

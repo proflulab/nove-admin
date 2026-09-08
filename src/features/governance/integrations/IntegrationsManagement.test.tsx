@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SystemConfigManagement } from './SystemConfigManagement';
+import { IntegrationsManagement } from './IntegrationsManagement';
 
 const mocks = vi.hoisted(() => ({
   canWrite: true,
@@ -13,17 +13,17 @@ vi.mock('../../../shared/hooks/useAuth', () => ({
   useAuth: () => ({ checkPermission: () => mocks.canWrite }),
 }));
 
-vi.mock('./api/systemConfigApi', () => ({
-  systemConfigApi: {
-    listConfigs: mocks.listConfigs,
-    getConfig: mocks.getConfig,
-    updateConfig: vi.fn(),
-    testConfig: vi.fn(),
-    deleteConfig: vi.fn(),
+vi.mock('./api/integrationsApi', () => ({
+  integrationsApi: {
+    list: mocks.listConfigs,
+    get: mocks.getConfig,
+    update: vi.fn(),
+    test: vi.fn(),
+    remove: vi.fn(),
   },
 }));
 
-describe('SystemConfigManagement', () => {
+describe('IntegrationsManagement', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -115,7 +115,7 @@ describe('SystemConfigManagement', () => {
   });
 
   it('renders grouped service navigation and the Lark restart boundary', async () => {
-    render(<SystemConfigManagement />);
+    render(<IntegrationsManagement />);
 
     expect(await screen.findByText('邮件服务配置')).toBeInTheDocument();
     expect(screen.getByLabelText('查看配置说明')).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe('SystemConfigManagement', () => {
 
   it('renders a content-only detail view without edit controls for read-only users', async () => {
     mocks.canWrite = false;
-    const { container } = render(<SystemConfigManagement />);
+    const { container } = render(<IntegrationsManagement />);
 
     expect(await screen.findByText('smtp.example.com')).toBeInTheDocument();
     expect(screen.getByLabelText('只读配置详情')).toBeInTheDocument();

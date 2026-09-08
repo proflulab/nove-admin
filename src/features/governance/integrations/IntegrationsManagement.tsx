@@ -30,7 +30,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { PERMISSIONS } from '../../../shared/utils/permissions';
-import { systemConfigApi } from './api/systemConfigApi';
+import { integrationsApi } from './api/integrationsApi';
 import { ReadonlyConfigView } from './components/ReadonlyConfigView';
 import {
   buildAiConfigPayload,
@@ -41,21 +41,21 @@ import {
 } from './lib/configPayload';
 import type {
   AiConfig,
-  ConfigDetail,
-  ConfigSource,
-  ConfigSummary,
+  IntegrationDetail,
+  IntegrationSource,
+  IntegrationSummary,
   LarkConfig,
   MailConfig,
-  ModuleConfigMap,
-  SystemConfigModule,
+  IntegrationConfigMap,
+  IntegrationModule,
   TencentMeetingConfig,
-  TestConfigResult,
+  TestIntegrationResult,
   WechatShopConfig,
 } from './types';
-import './SystemConfigManagement.css';
+import './IntegrationsManagement.css';
 
 const MODULE_META: Record<
-  SystemConfigModule,
+  IntegrationModule,
   { label: string; title: string; description: string; icon: ReactNode }
 > = {
   mail: {
@@ -90,7 +90,7 @@ const MODULE_META: Record<
   },
 };
 
-const SOURCE_TEXT: Record<ConfigSource, string> = {
+const SOURCE_TEXT: Record<IntegrationSource, string> = {
   database: '数据库',
   default: '默认值',
 };
@@ -109,15 +109,15 @@ function SecretInput({ placeholder, ...inputProps }: SecretInputProps) {
 }
 
 interface ConfigPanelProps {
-  module: SystemConfigModule;
-  summary?: ConfigSummary;
+  module: IntegrationModule;
+  summary?: IntegrationSummary;
   loading: boolean;
   saving: boolean;
   testing: boolean;
   deleting: boolean;
   canWrite: boolean;
   isEditing: boolean;
-  testResult?: TestConfigResult;
+  testResult?: TestIntegrationResult;
   onRefresh: () => void;
   onEdit: () => void;
   onCancelEdit: () => void;
@@ -150,19 +150,19 @@ function ConfigPanel({
 
   return (
     <Card
-      className="system-config-card"
+      className="integrations-card"
       loading={loading}
       title={
-        <div className="system-config-card-heading">
-          <span className="system-config-card-title-line">
+        <div className="integrations-card-heading">
+          <span className="integrations-card-title-line">
             <span>{meta.title}</span>
             <Popover
               placement="bottomLeft"
               title="配置说明"
               content={
-                <div className="system-config-secret-help">
-                  <div className="system-config-help-section">
-                    <div className="system-config-help-section-title">密钥更新</div>
+                <div className="integrations-secret-help">
+                  <div className="integrations-help-section">
+                    <div className="integrations-help-section-title">密钥更新</div>
                     <div>
                       已配置的敏感字段会以 <code>********</code>{' '}
                       显示。保持原样或留空会继续使用当前密钥；输入新值后才会替换。
@@ -170,16 +170,16 @@ function ConfigPanel({
                   </div>
                   {summary?.source === 'database' &&
                     (summary.environmentImportedFields?.length ?? 0) > 0 && (
-                      <div className="system-config-help-section">
-                        <div className="system-config-help-section-title">初始配置来源</div>
+                      <div className="integrations-help-section">
+                        <div className="integrations-help-section-title">初始配置来源</div>
                         <div>
                           此配置首次由环境变量导入数据库，当前及后续运行均以数据库配置为准。
                         </div>
                       </div>
                     )}
                   {module === 'lark' && (
-                    <div className="system-config-help-section">
-                      <div className="system-config-help-section-title">飞书长连接</div>
+                    <div className="integrations-help-section">
+                      <div className="integrations-help-section-title">飞书长连接</div>
                       <div>
                         HTTP API 和事件配置会立即生效；App ID 或 App Secret
                         变更后，事件长连接需要重启 API。
@@ -192,7 +192,7 @@ function ConfigPanel({
               <Button
                 type="text"
                 size="small"
-                className="system-config-help-button"
+                className="integrations-help-button"
                 aria-label="查看配置说明"
                 icon={<QuestionCircleOutlined />}
               />
@@ -224,7 +224,7 @@ function ConfigPanel({
     >
       {isEditing && testResult && (
         <Alert
-          className="system-config-test-result"
+          className="integrations-test-result"
           type={testResult.success ? 'success' : 'error'}
           showIcon
           title={testResult.message}
@@ -233,8 +233,8 @@ function ConfigPanel({
       {children}
       {isEditing && (
         <>
-          <Divider className="system-config-divider" />
-          <div className="system-config-actions">
+          <Divider className="integrations-divider" />
+          <div className="integrations-actions">
             <Popconfirm
               title={`删除${meta.label}数据库配置？`}
               description="删除后服务将变为未配置，重启时也不会从环境变量恢复。"
@@ -264,21 +264,21 @@ function ConfigPanel({
   );
 }
 
-export function SystemConfigManagement() {
+export function IntegrationsManagement() {
   const { checkPermission } = useAuth();
   const canWrite = checkPermission(PERMISSIONS.SYSTEM.CONFIG_WRITE);
-  const [activeModule, setActiveModule] = useState<SystemConfigModule>('mail');
-  const [editingModule, setEditingModule] = useState<SystemConfigModule | null>(null);
-  const [summaries, setSummaries] = useState<ConfigSummary[]>([]);
+  const [activeModule, setActiveModule] = useState<IntegrationModule>('mail');
+  const [editingModule, setEditingModule] = useState<IntegrationModule | null>(null);
+  const [summaries, setSummaries] = useState<IntegrationSummary[]>([]);
   const [details, setDetails] = useState<
-    Partial<{ [M in SystemConfigModule]: ConfigDetail<ModuleConfigMap[M]> }>
+    Partial<{ [M in IntegrationModule]: IntegrationDetail<IntegrationConfigMap[M]> }>
   >({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [testResults, setTestResults] = useState<
-    Partial<Record<SystemConfigModule, TestConfigResult>>
+    Partial<Record<IntegrationModule, TestIntegrationResult>>
   >({});
 
   const [mailForm] = Form.useForm<MailConfig>();
@@ -293,7 +293,7 @@ export function SystemConfigManagement() {
   );
 
   const setFormValue = useCallback(
-    (module: SystemConfigModule, value: ModuleConfigMap[SystemConfigModule]) => {
+    (module: IntegrationModule, value: IntegrationConfigMap[IntegrationModule]) => {
       if (module === 'mail') mailForm.setFieldsValue(value as MailConfig);
       if (module === 'ai') aiForm.setFieldsValue(value as AiConfig);
       if (module === 'tencent-meeting') tencentForm.setFieldsValue(value as TencentMeetingConfig);
@@ -305,16 +305,16 @@ export function SystemConfigManagement() {
 
   const loadSummaries = useCallback(async () => {
     try {
-      setSummaries(await systemConfigApi.listConfigs());
+      setSummaries(await integrationsApi.list());
     } catch {
       message.error('加载服务配置状态失败');
     }
   }, []);
 
-  const loadConfig = useCallback(async (module: SystemConfigModule) => {
+  const loadConfig = useCallback(async (module: IntegrationModule) => {
     setLoading(true);
     try {
-      const detail = await systemConfigApi.getConfig(module);
+      const detail = await integrationsApi.get(module);
       setDetails((current) => ({ ...current, [module]: detail }));
     } catch {
       message.error(`加载${MODULE_META[module].label}配置失败`);
@@ -337,7 +337,7 @@ export function SystemConfigManagement() {
     void loadConfig(activeModule);
   }, [activeModule, loadConfig]);
 
-  const getValues = async (module: SystemConfigModule) => {
+  const getValues = async (module: IntegrationModule) => {
     switch (module) {
       case 'mail':
         return buildMailConfigPayload(await mailForm.validateFields());
@@ -356,7 +356,7 @@ export function SystemConfigManagement() {
     setSaving(true);
     try {
       const values = await getValues(activeModule);
-      const result = await systemConfigApi.updateConfig(activeModule, values);
+      const result = await integrationsApi.update(activeModule, values);
       if (result.restartRequired) message.warning(result.message);
       else message.success(result.message);
       await Promise.all([loadConfig(activeModule), loadSummaries()]);
@@ -372,7 +372,7 @@ export function SystemConfigManagement() {
     setTesting(true);
     try {
       const values = await getValues(activeModule);
-      const result = await systemConfigApi.testConfig(activeModule, values);
+      const result = await integrationsApi.test(activeModule, values);
       setTestResults((current) => ({ ...current, [activeModule]: result }));
     } catch (error) {
       if (error instanceof Error) message.error('测试配置失败');
@@ -384,7 +384,7 @@ export function SystemConfigManagement() {
   const deleteConfig = async () => {
     setDeleting(true);
     try {
-      const result = await systemConfigApi.deleteConfig(activeModule);
+      const result = await integrationsApi.remove(activeModule);
       if (result.restartRequired) message.warning(result.message);
       else message.success(result.message);
       setTestResults((current) => ({ ...current, [activeModule]: undefined }));
@@ -426,19 +426,19 @@ export function SystemConfigManagement() {
   const isEditing = canWrite && editingModule === activeModule;
 
   return (
-    <div className="system-config-page">
-      <aside className="system-config-sidebar">
+    <div className="integrations-page">
+      <aside className="integrations-sidebar">
         <Menu
           mode="inline"
           selectedKeys={[activeModule]}
           items={menuItems}
           onSelect={({ key }) => {
             setEditingModule(null);
-            setActiveModule(key as SystemConfigModule);
+            setActiveModule(key as IntegrationModule);
           }}
         />
       </aside>
-      <main className="system-config-content">
+      <main className="integrations-content">
         <ConfigPanel
           module={activeModule}
           summary={summaryMap.get(activeModule) ?? details[activeModule]}
@@ -473,12 +473,12 @@ export function SystemConfigManagement() {
   );
 }
 
-function menuItem(module: SystemConfigModule, summary?: ConfigSummary) {
+function menuItem(module: IntegrationModule, summary?: IntegrationSummary) {
   return {
     key: module,
     icon: MODULE_META[module].icon,
     label: (
-      <span className="system-config-menu-label">
+      <span className="integrations-menu-label">
         <span>{MODULE_META[module].label}</span>
         <span className={summary?.configured ? 'is-configured' : ''} />
       </span>
@@ -488,7 +488,7 @@ function menuItem(module: SystemConfigModule, summary?: ConfigSummary) {
 
 function MailFields({ form }: { form: ReturnType<typeof Form.useForm<MailConfig>>[0] }) {
   return (
-    <Form className="system-config-form" form={form} layout="vertical">
+    <Form className="integrations-form" form={form} layout="vertical">
       <Divider titlePlacement="start">SMTP 设置</Divider>
       <Row gutter={16}>
         <Col xs={24} md={12}>
@@ -517,10 +517,10 @@ function MailFields({ form }: { form: ReturnType<typeof Form.useForm<MailConfig>
       <Form.Item label="密码" name="pass" rules={[{ required: true }]}>
         <SecretInput placeholder="输入新密码以替换" />
       </Form.Item>
-      <div className="system-config-switch-row">
+      <div className="integrations-switch-row">
         <div>
-          <div className="system-config-switch-title">SSL/TLS 加密</div>
-          <div className="system-config-switch-description">根据邮件服务商端口要求启用</div>
+          <div className="integrations-switch-title">SSL/TLS 加密</div>
+          <div className="integrations-switch-description">根据邮件服务商端口要求启用</div>
         </div>
         <Form.Item name="secure" valuePropName="checked" noStyle>
           <Switch checkedChildren="启用" unCheckedChildren="关闭" />
@@ -558,7 +558,7 @@ function MailFields({ form }: { form: ReturnType<typeof Form.useForm<MailConfig>
 
 function AiFields({ form }: { form: ReturnType<typeof Form.useForm<AiConfig>>[0] }) {
   return (
-    <Form className="system-config-form" form={form} layout="vertical">
+    <Form className="integrations-form" form={form} layout="vertical">
       <Row gutter={16}>
         <Col xs={24} md={8}>
           <Form.Item label="服务商" name="provider" rules={[{ required: true }]}>
@@ -605,7 +605,7 @@ function TencentMeetingFields({
   form: ReturnType<typeof Form.useForm<TencentMeetingConfig>>[0];
 }) {
   return (
-    <Form className="system-config-form" form={form} layout="vertical">
+    <Form className="integrations-form" form={form} layout="vertical">
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item label="App ID" name="appId" rules={[{ required: true }]}>
@@ -646,7 +646,7 @@ function TencentMeetingFields({
 
 function LarkFields({ form }: { form: ReturnType<typeof Form.useForm<LarkConfig>>[0] }) {
   return (
-    <Form className="system-config-form" form={form} layout="vertical">
+    <Form className="integrations-form" form={form} layout="vertical">
       <Divider titlePlacement="start">应用与事件</Divider>
       <Form.Item label="App ID" name="appId" rules={[{ required: true }]}>
         <Input />
@@ -676,7 +676,7 @@ function WechatShopFields({
   form: ReturnType<typeof Form.useForm<WechatShopConfig>>[0];
 }) {
   return (
-    <Form className="system-config-form" form={form} layout="vertical">
+    <Form className="integrations-form" form={form} layout="vertical">
       <Form.Item label="App ID" name="appId" rules={[{ required: true }]}>
         <Input />
       </Form.Item>
