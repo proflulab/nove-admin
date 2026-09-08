@@ -1,6 +1,6 @@
 import Tag from 'antd/es/tag';
 import type { ReactNode } from 'react';
-import type { ModuleConfigMap, SystemConfigModule } from '../types';
+import type { IntegrationConfigMap, IntegrationModule } from '../types';
 
 type ReadonlyFieldKind = 'boolean' | 'color' | 'provider' | 'secret' | 'text';
 
@@ -22,7 +22,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   custom: '自定义兼容服务',
 };
 
-const READONLY_SECTIONS: Record<SystemConfigModule, ReadonlySection[]> = {
+const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
   mail: [
     {
       title: 'SMTP 设置',
@@ -135,7 +135,7 @@ function hasValue(value: unknown): boolean {
 }
 
 function renderValue(field: ReadonlyField, value: unknown): ReactNode {
-  if (!hasValue(value)) return <span className="system-config-readonly-empty">未配置</span>;
+  if (!hasValue(value)) return <span className="integrations-readonly-empty">未配置</span>;
 
   if (field.kind === 'secret') return <Tag color="success">已配置（不可查看）</Tag>;
   if (field.kind === 'boolean') {
@@ -149,8 +149,8 @@ function renderValue(field: ReadonlyField, value: unknown): ReactNode {
   if (field.kind === 'color') {
     const color = String(value);
     return (
-      <span className="system-config-readonly-color">
-        <span className="system-config-readonly-swatch" style={{ backgroundColor: color }} />
+      <span className="integrations-readonly-color">
+        <span className="integrations-readonly-swatch" style={{ backgroundColor: color }} />
         <span>{color}</span>
       </span>
     );
@@ -163,23 +163,23 @@ export function ReadonlyConfigView({
   module,
   value,
 }: {
-  module: SystemConfigModule;
-  value?: ModuleConfigMap[SystemConfigModule];
+  module: IntegrationModule;
+  value?: IntegrationConfigMap[IntegrationModule];
 }) {
   const config = (value ?? {}) as Record<string, unknown>;
 
   return (
-    <div className="system-config-readonly" aria-label="只读配置详情">
+    <div className="integrations-readonly" aria-label="只读配置详情">
       {READONLY_SECTIONS[module].map((section) => (
-        <section className="system-config-readonly-section" key={section.title}>
+        <section className="integrations-readonly-section" key={section.title}>
           <h3>{section.title}</h3>
-          <dl className="system-config-readonly-grid">
+          <dl className="integrations-readonly-grid">
             {section.fields.map((field) => (
               <div
                 className={
                   field.fullWidth
-                    ? 'system-config-readonly-item is-full-width'
-                    : 'system-config-readonly-item'
+                    ? 'integrations-readonly-item is-full-width'
+                    : 'integrations-readonly-item'
                 }
                 key={field.key}
               >

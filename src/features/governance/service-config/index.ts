@@ -1,1 +1,0 @@
-export { systemConfigRoutes } from './routes';

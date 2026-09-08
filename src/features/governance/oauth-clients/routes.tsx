@@ -7,7 +7,7 @@ export const oauthClientRoutes: RouteConfig[] = [
   {
     path: '/oauth-clients',
     element: <OAuthClientManagement />,
-    title: 'OAuth 客户端',
+    title: 'OAuth',
     menu: true,
     permission: PERMISSIONS.OAUTH_CLIENT.READ,
     icon: <AppstoreOutlined />,
