@@ -9,6 +9,7 @@ interface ReadonlyField {
   label: string;
   kind?: ReadonlyFieldKind;
   fullWidth?: boolean;
+  scanProvider?: string;
 }
 
 interface ReadonlySection {
@@ -92,10 +93,15 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
   ],
   lark: [
     {
-      title: '应用与事件',
+      title: '应用配置',
       fields: [
         { key: 'appId', label: 'App ID', fullWidth: true },
         { key: 'appSecret', label: 'App Secret', kind: 'secret', fullWidth: true },
+      ],
+    },
+    {
+      title: '事件订阅',
+      fields: [
         { key: 'eventEncryptKey', label: '事件 Encrypt Key', kind: 'secret' },
         {
           key: 'eventVerificationToken',
@@ -139,6 +145,11 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
         { key: 'documentMaxMiB', label: '文档上限 MiB' },
         { key: 'audioMaxMiB', label: '音频上限 MiB' },
         { key: 'videoMaxMiB', label: '视频上限 MiB' },
+      ],
+    },
+    {
+      title: '下载与回收站',
+      fields: [
         { key: 'downloadUrlExpiresSeconds', label: '下载 URL 有效期（秒）' },
         { key: 'recycleRetentionDays', label: '回收站保留天数' },
       ],
@@ -147,12 +158,12 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
       title: '病毒扫描',
       fields: [
         { key: 'malwareScanProvider', label: '扫描服务', kind: 'provider' },
-        { key: 'aliyunSasRegionId', label: '阿里云 SAS 地域' },
-        { key: 'scanTimeoutMs', label: '云扫描超时 ms' },
-        { key: 'scanPollIntervalMs', label: '轮询间隔 ms' },
-        { key: 'clamAvHost', label: 'ClamAV 主机' },
-        { key: 'clamAvPort', label: 'ClamAV 端口' },
-        { key: 'clamAvTimeoutMs', label: 'ClamAV 超时 ms' },
+        { key: 'aliyunSasRegionId', label: '阿里云 SAS 地域', scanProvider: 'ALIYUN_SAS' },
+        { key: 'scanTimeoutMs', label: '扫描超时（毫秒）', scanProvider: 'ALIYUN_SAS' },
+        { key: 'scanPollIntervalMs', label: '轮询间隔（毫秒）', scanProvider: 'ALIYUN_SAS' },
+        { key: 'clamAvHost', label: 'ClamAV 主机', scanProvider: 'CLAMAV' },
+        { key: 'clamAvPort', label: 'ClamAV 端口', scanProvider: 'CLAMAV' },
+        { key: 'clamAvTimeoutMs', label: '扫描超时（毫秒）', scanProvider: 'CLAMAV' },
       ],
     },
   ],
@@ -163,6 +174,7 @@ function hasValue(value: unknown): boolean {
 }
 
 function renderValue(field: ReadonlyField, value: unknown): ReactNode {
+  if (field.key === 'malwareScanProvider' && !hasValue(value)) return '跟随服务端配置';
   if (!hasValue(value)) return <span className="integrations-readonly-empty">未配置</span>;
 
   if (field.kind === 'secret') return <Tag color="success">已配置（不可查看）</Tag>;
@@ -202,19 +214,23 @@ export function ReadonlyConfigView({
         <section className="integrations-readonly-section" key={section.title}>
           <h3>{section.title}</h3>
           <dl className="integrations-readonly-grid">
-            {section.fields.map((field) => (
-              <div
-                className={
-                  field.fullWidth
-                    ? 'integrations-readonly-item is-full-width'
-                    : 'integrations-readonly-item'
-                }
-                key={field.key}
-              >
-                <dt>{field.label}</dt>
-                <dd>{renderValue(field, config[field.key])}</dd>
-              </div>
-            ))}
+            {section.fields
+              .filter(
+                (field) => !field.scanProvider || field.scanProvider === config.malwareScanProvider
+              )
+              .map((field) => (
+                <div
+                  className={
+                    field.fullWidth
+                      ? 'integrations-readonly-item is-full-width'
+                      : 'integrations-readonly-item'
+                  }
+                  key={field.key}
+                >
+                  <dt>{field.label}</dt>
+                  <dd>{renderValue(field, config[field.key])}</dd>
+                </div>
+              ))}
           </dl>
         </section>
       ))}

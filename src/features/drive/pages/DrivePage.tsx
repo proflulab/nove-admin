@@ -1,5 +1,8 @@
 import {
-  CloudDownloadOutlined,
+  MoreOutlined,
+  AudioOutlined,
+  VideoCameraOutlined,
+  FileImageOutlined,
   DeleteOutlined,
   FileOutlined,
   FolderAddOutlined,
@@ -11,6 +14,11 @@ import {
 import Breadcrumb from 'antd/es/breadcrumb';
 import Button from 'antd/es/button';
 import Card from 'antd/es/card';
+import Dropdown from 'antd/es/dropdown';
+import Empty from 'antd/es/empty';
+import Tooltip from 'antd/es/tooltip';
+import type { MenuProps } from 'antd';
+import { useAuth } from '../../../shared/hooks/useAuth';
 import Input from 'antd/es/input';
 import message from 'antd/es/message';
 import Modal from 'antd/es/modal';
@@ -71,6 +79,7 @@ function formatBytes(value: string | null) {
 }
 
 export function DrivePage() {
+  const { checkPermission } = useAuth();
   const [spaces, setSpaces] = useState<DriveSpace[]>([]);
   const [spaceId, setSpaceId] = useState<string>();
   const [nodes, setNodes] = useState<DriveNode[]>([]);
@@ -288,15 +297,49 @@ export function DrivePage() {
     });
   };
 
+  const rowMenu = (node: DriveNode): MenuProps['items'] => [
+    { key: 'details', label: '查看详情', onClick: () => void openDetails(node) },
+    ...(checkPermission(PERMISSIONS.DRIVE.UPDATE)
+      ? [
+          { key: 'rename', label: '重命名', onClick: () => rename(node) },
+          { key: 'move', label: '移动到…', onClick: () => moveNode(node) },
+        ]
+      : []),
+    ...(checkPermission(PERMISSIONS.DRIVE.MANAGE_ACL)
+      ? [{ key: 'permissions', label: '管理权限', onClick: () => void openGrants(node) }]
+      : []),
+    ...(checkPermission(PERMISSIONS.DRIVE.DELETE)
+      ? [
+          {
+            key: 'trash',
+            label: '移至回收站',
+            danger: true,
+            icon: <DeleteOutlined />,
+            onClick: async () => {
+              await driveApi.trash(node.id);
+              await loadNodes();
+            },
+          },
+        ]
+      : []),
+  ];
+
   return (
     <div className="drive-page">
       <Card
-        title="云盘"
+        className="drive-surface"
+        title={
+          <div className="drive-heading">
+            <span>{trash ? '回收站' : '文件列表'}</span>
+            <span className="drive-count">{visibleNodes.length} 个项目</span>
+          </div>
+        }
         extra={
-          <Space wrap>
+          <Space wrap className="drive-header-controls">
             <Select
               value={spaceId}
-              style={{ width: 220 }}
+              className="drive-space-select"
+              aria-label="选择云盘空间"
               options={spaces.map((item) => ({ label: item.name, value: item.id }))}
               onChange={(value) => {
                 setSpaceId(value);
@@ -306,11 +349,19 @@ export function DrivePage() {
             />
             <Input.Search
               allowClear
-              placeholder="筛选当前目录"
+              className="drive-search"
+              placeholder="搜索当前目录"
               onSearch={setSearch}
               onChange={(event) => setSearch(event.target.value)}
             />
-            <Button icon={<ReloadOutlined />} onClick={() => void loadNodes()} />
+            <Tooltip title="刷新列表">
+              <Button
+                aria-label="刷新列表"
+                type="text"
+                icon={<ReloadOutlined spin={loading} />}
+                onClick={() => void loadNodes()}
+              />
+            </Tooltip>
           </Space>
         }
       >
@@ -323,7 +374,7 @@ export function DrivePage() {
               })),
             ]}
           />
-          <Space>
+          <Space wrap className="drive-toolbar-actions">
             <Button
               icon={trash ? <FolderOpenOutlined /> : <RestOutlined />}
               onClick={() => setTrash((value) => !value)}
@@ -363,39 +414,93 @@ export function DrivePage() {
           rowKey="id"
           loading={loading}
           dataSource={visibleNodes}
+          className="drive-table"
+          tableLayout="fixed"
+          scroll={{ x: 760 }}
           pagination={false}
-          locale={{ emptyText: trash ? '回收站为空' : '当前目录为空' }}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  search
+                    ? '没有匹配的文件'
+                    : trash
+                      ? '回收站为空'
+                      : '当前目录为空，上传文件或新建文件夹开始使用'
+                }
+              />
+            ),
+          }}
           columns={[
             {
               title: '名称',
               dataIndex: 'name',
-              render: (name, node) => (
-                <Button
-                  type="link"
-                  icon={node.type === 'FOLDER' ? <FolderOpenOutlined /> : <FileOutlined />}
-                  onClick={() => node.type === 'FOLDER' && !trash && setPath([...path, node])}
+              ellipsis: true,
+              render: (name: string, node) => (
+                <button
+                  className="drive-file-name"
+                  title={name}
+                  onClick={() =>
+                    node.type === 'FOLDER' && !trash
+                      ? setPath([...path, node])
+                      : void openDetails(node)
+                  }
                 >
-                  {name}
-                </Button>
+                  <span className={`drive-file-icon ${node.type === 'FOLDER' ? 'is-folder' : ''}`}>
+                    {node.type === 'FOLDER' ? (
+                      <FolderOpenOutlined />
+                    ) : node.contentType?.startsWith('audio/') ? (
+                      <AudioOutlined />
+                    ) : node.contentType?.startsWith('video/') ? (
+                      <VideoCameraOutlined />
+                    ) : node.contentType?.startsWith('image/') ? (
+                      <FileImageOutlined />
+                    ) : (
+                      <FileOutlined />
+                    )}
+                  </span>
+                  <span className="drive-file-label">{name}</span>
+                </button>
               ),
             },
             {
               title: '类型',
               dataIndex: 'contentType',
-              width: 200,
-              render: (value, node) => (node.type === 'FOLDER' ? '文件夹' : value || '-'),
+              width: 100,
+              render: (value: string | null, node) =>
+                node.type === 'FOLDER'
+                  ? '文件夹'
+                  : value?.startsWith('audio/')
+                    ? '音频'
+                    : value?.startsWith('video/')
+                      ? '视频'
+                      : value?.startsWith('image/')
+                        ? '图片'
+                        : node.name.match(/\.([^.]+)$/)?.[1].toUpperCase() || '文件',
             },
-            { title: '大小', dataIndex: 'sizeBytes', width: 120, render: formatBytes },
+            { title: '大小', dataIndex: 'sizeBytes', width: 100, render: formatBytes },
             {
               title: '状态',
               dataIndex: 'fileStatus',
               width: 110,
               render: (value) =>
-                value ? <Tag color={value === 'ACTIVE' ? 'green' : 'gold'}>{value}</Tag> : '-',
+                value ? (
+                  <Tag
+                    bordered={false}
+                    color={
+                      value === 'ACTIVE' ? 'success' : value === 'REJECTED' ? 'error' : 'processing'
+                    }
+                  >
+                    {value === 'ACTIVE' ? '可用' : value === 'REJECTED' ? '未通过' : '扫描中'}
+                  </Tag>
+                ) : (
+                  <span className="drive-muted">—</span>
+                ),
             },
             {
               title: '操作',
-              width: 260,
+              width: trash ? 210 : 146,
               render: (_, node) =>
                 trash ? (
                   <Space>
@@ -422,32 +527,33 @@ export function DrivePage() {
                     </Perm>
                   </Space>
                 ) : (
-                  <Space>
+                  <Space size={4} className="drive-row-actions">
                     {node.fileId ? (
-                      <Button icon={<CloudDownloadOutlined />} onClick={() => void download(node)}>
+                      <Button
+                        type="text"
+                        size="small"
+                        disabled={node.fileStatus !== 'ACTIVE'}
+                        onClick={() => void download(node)}
+                      >
                         下载
                       </Button>
-                    ) : null}
-                    <Perm permission={PERMISSIONS.DRIVE.UPDATE}>
-                      <Button onClick={() => rename(node)}>重命名</Button>
-                      <Button onClick={() => moveNode(node)}>移动</Button>
-                    </Perm>
-                    <Button onClick={() => void openDetails(node)}>详情</Button>
-                    <Perm permission={PERMISSIONS.DRIVE.MANAGE_ACL}>
-                      <Button onClick={() => void openGrants(node)}>权限</Button>
-                    </Perm>
-                    <Perm permission={PERMISSIONS.DRIVE.DELETE}>
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={async () => {
-                          await driveApi.trash(node.id);
-                          await loadNodes();
-                        }}
-                      >
-                        删除
+                    ) : (
+                      <Button type="text" size="small" onClick={() => setPath([...path, node])}>
+                        打开
                       </Button>
-                    </Perm>
+                    )}
+                    <Dropdown
+                      menu={{ items: rowMenu(node) }}
+                      trigger={['click']}
+                      placement="bottomRight"
+                    >
+                      <Button
+                        type="text"
+                        size="small"
+                        aria-label={`更多操作：${node.name}`}
+                        icon={<MoreOutlined />}
+                      />
+                    </Dropdown>
                   </Space>
                 ),
             },

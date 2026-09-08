@@ -185,7 +185,8 @@ describe('IntegrationsManagement', () => {
     expect(screen.getAllByText('已配置（不可查看）')).toHaveLength(3);
 
     await userEvent.click(screen.getByText('飞书'));
-    expect(await screen.findByText('应用与事件')).toBeInTheDocument();
+    expect(await screen.findByText('应用配置')).toBeInTheDocument();
+    expect(screen.getByText('事件订阅')).toBeInTheDocument();
     expect(screen.getByText('lark-app')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('微信小店'));
@@ -202,8 +203,18 @@ describe('IntegrationsManagement', () => {
     await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('drive'));
     await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
     expect(await screen.findByLabelText('允许扩展名')).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: '扫描服务' }));
+    await user.click(screen.getByText('ClamAV', { selector: '.ant-select-item-option-content' }));
+    expect(screen.getByLabelText('ClamAV 主机')).toBeVisible();
+    expect(screen.getByLabelText('阿里云地域')).not.toBeVisible();
+    await user.click(screen.getByRole('combobox', { name: '扫描服务' }));
+    await user.click(
+      screen.getByText('阿里云安全中心', { selector: '.ant-select-item-option-content' })
+    );
+    expect(screen.getByLabelText('阿里云地域')).toBeVisible();
+    expect(screen.getByLabelText('ClamAV 主机')).not.toBeVisible();
     expect(screen.queryByLabelText('会议同步默认组织 ID')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
-  });
+  }, 15_000);
 });

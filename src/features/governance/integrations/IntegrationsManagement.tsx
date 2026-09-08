@@ -671,13 +671,14 @@ function TencentMeetingFields({
 function LarkFields({ form }: { form: ReturnType<typeof Form.useForm<LarkConfig>>[0] }) {
   return (
     <Form className="integrations-form" form={form} layout="vertical">
-      <Divider titlePlacement="start">应用与事件</Divider>
+      <Divider titlePlacement="start">应用配置</Divider>
       <Form.Item label="App ID" name="appId" rules={[{ required: true }]}>
         <Input />
       </Form.Item>
       <Form.Item label="App Secret" name="appSecret" rules={[{ required: true }]}>
         <SecretInput placeholder="输入新 App Secret 以替换" />
       </Form.Item>
+      <Divider titlePlacement="start">事件订阅</Divider>
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item label="事件 Encrypt Key" name="eventEncryptKey">
@@ -721,6 +722,8 @@ function WechatShopFields({
 }
 
 function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfig>>[0] }) {
+  const scanProvider = Form.useWatch('malwareScanProvider', form);
+
   return (
     <Form
       className="integrations-form"
@@ -733,7 +736,6 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
         documentMaxMiB: 100,
         audioMaxMiB: 2048,
         videoMaxMiB: 20480,
-        malwareScanProvider: 'ALIYUN_SAS',
         aliyunSasRegionId: 'cn-beijing',
         scanTimeoutMs: 300000,
         scanPollIntervalMs: 3000,
@@ -776,42 +778,39 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
           </Form.Item>
         </Col>
       </Row>
-      <Alert
-        type="info"
-        showIcon
-        title="办公文档、图片、HTML/SVG 必须扫描；音视频按文件头和来源校验。阿里云 SDK 单文件上限为 100 MiB。"
-      />
       <Divider titlePlacement="start">病毒扫描</Divider>
-      <Row gutter={16}>
-        <Col xs={24} md={8}>
-          <Form.Item label="病毒扫描 Provider" name="malwareScanProvider">
-            <Select
-              options={[
-                { label: '阿里云安全中心（生产推荐）', value: 'ALIYUN_SAS' },
-                { label: 'ClamAV（本地/专用节点）', value: 'CLAMAV' },
-              ]}
-            />
-          </Form.Item>
+      <Form.Item label="扫描服务" name="malwareScanProvider" extra="未指定时跟随服务端配置。">
+        <Select
+          placeholder="跟随服务端配置"
+          options={[
+            { label: '阿里云安全中心', value: 'ALIYUN_SAS' },
+            { label: 'ClamAV', value: 'CLAMAV' },
+          ]}
+        />
+      </Form.Item>
+      <Row gutter={16} style={{ display: scanProvider === 'ALIYUN_SAS' ? undefined : 'none' }}>
+        <Col xs={24}>
+          <Alert type="info" showIcon title="阿里云扫描单文件上限为 100 MiB。" />
         </Col>
-        <Col xs={24} md={8}>
-          <Form.Item label="阿里云 SAS 地域" name="aliyunSasRegionId">
+        <Col xs={24} md={12}>
+          <Form.Item label="阿里云地域" name="aliyunSasRegionId">
             <Input placeholder="cn-beijing" />
           </Form.Item>
         </Col>
-        <Col xs={12} md={4}>
-          <Form.Item label="云扫描超时 ms" name="scanTimeoutMs">
+        <Col xs={12} md={6}>
+          <Form.Item label="扫描超时（毫秒）" name="scanTimeoutMs">
             <InputNumber min={30000} max={1800000} style={{ width: '100%' }} />
           </Form.Item>
         </Col>
-        <Col xs={12} md={4}>
-          <Form.Item label="轮询间隔 ms" name="scanPollIntervalMs">
+        <Col xs={12} md={6}>
+          <Form.Item label="轮询间隔（毫秒）" name="scanPollIntervalMs">
             <InputNumber min={1000} max={30000} style={{ width: '100%' }} />
           </Form.Item>
         </Col>
       </Row>
-      <Row gutter={16}>
+      <Row gutter={16} style={{ display: scanProvider === 'CLAMAV' ? undefined : 'none' }}>
         <Col xs={24} md={12}>
-          <Form.Item label="ClamAV 主机（Provider 为 ClamAV 时）" name="clamAvHost">
+          <Form.Item label="ClamAV 主机" name="clamAvHost">
             <Input placeholder="clamav.internal" />
           </Form.Item>
         </Col>
@@ -821,11 +820,12 @@ function DriveFields({ form }: { form: ReturnType<typeof Form.useForm<DriveConfi
           </Form.Item>
         </Col>
         <Col xs={12} md={6}>
-          <Form.Item label="ClamAV 超时 ms" name="clamAvTimeoutMs">
+          <Form.Item label="扫描超时（毫秒）" name="clamAvTimeoutMs">
             <InputNumber min={1000} max={3600000} style={{ width: '100%' }} />
           </Form.Item>
         </Col>
       </Row>
+      <Divider titlePlacement="start">下载与回收站</Divider>
       <Row gutter={16}>
         <Col xs={12}>
           <Form.Item label="下载 URL 有效期（秒）" name="downloadUrlExpiresSeconds">
