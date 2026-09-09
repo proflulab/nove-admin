@@ -140,6 +140,31 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
       fields: [{ key: 'apiBaseUrl', label: 'API Base URL', fullWidth: true }],
     },
   ],
+  wecom: [
+    {
+      title: '企业凭证',
+      fields: [
+        { key: 'corpId', label: '企业 ID (Corp ID)', fullWidth: true },
+        { key: 'corpSecret', label: '应用 Secret (Corp Secret)', kind: 'secret', fullWidth: true },
+      ],
+    },
+    {
+      title: 'Webhook',
+      fields: [
+        { key: 'webhookToken', label: 'Webhook Token', kind: 'secret', fullWidth: true },
+        {
+          key: 'encodingAesKey',
+          label: 'Encoding AES Key',
+          kind: 'secret',
+          fullWidth: true,
+        },
+      ],
+    },
+    {
+      title: 'API 地址',
+      fields: [{ key: 'apiBaseUrl', label: 'API Base URL', fullWidth: true }],
+    },
+  ],
   drive: [
     {
       title: '文件策略',

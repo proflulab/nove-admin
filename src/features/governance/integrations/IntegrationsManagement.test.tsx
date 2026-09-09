@@ -52,6 +52,7 @@ describe('IntegrationsManagement', () => {
         'tencent-meeting',
         'lark',
         'wechat-shop',
+        'wecom',
         'storage',
         'drive',
         'file-scanning',
@@ -118,6 +119,13 @@ describe('IntegrationsManagement', () => {
             encodingAesKey: '',
             apiBaseUrl: 'https://api.weixin.qq.com',
           },
+          wecom: {
+            corpId: 'ww123456789',
+            corpSecret: '********',
+            webhookToken: '********',
+            encodingAesKey: '********',
+            apiBaseUrl: 'https://qyapi.weixin.qq.com',
+          },
           storage: {
             provider: 'OSS',
             region: 'oss-cn-hangzhou',
@@ -158,7 +166,7 @@ describe('IntegrationsManagement', () => {
     expect(screen.getByText('通知服务')).toBeInTheDocument();
     expect(screen.getByText('AI 能力')).toBeInTheDocument();
     expect(screen.getByText('会议集成')).toBeInTheDocument();
-    expect(screen.getByText('交易集成')).toBeInTheDocument();
+    expect(screen.getByText('通讯与协同')).toBeInTheDocument();
     expect(screen.getByLabelText('只读配置详情')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /编辑配置/ })).toBeInTheDocument();
@@ -229,6 +237,11 @@ describe('IntegrationsManagement', () => {
     expect(screen.getByText('API 地址')).toBeInTheDocument();
     expect(screen.getByText('https://api.weixin.qq.com')).toBeInTheDocument();
     expect(screen.getAllByText('未配置').length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByText('企业微信'));
+    expect(await screen.findByText('企业凭证')).toBeInTheDocument();
+    expect(screen.getByText('ww123456789')).toBeInTheDocument();
+    expect(screen.getAllByText('已配置（不可查看）').length).toBeGreaterThan(0);
   }, 15_000);
 
   it('edits drive policies without unsupported connection test', async () => {

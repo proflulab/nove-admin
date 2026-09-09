@@ -2,6 +2,7 @@ import {
   ApiOutlined,
   CloudOutlined,
   CloudServerOutlined,
+  ClusterOutlined,
   EditOutlined,
   MailOutlined,
   QuestionCircleOutlined,
@@ -42,6 +43,7 @@ import {
   buildStorageConfigPayload,
   buildTencentMeetingConfigPayload,
   buildWechatShopConfigPayload,
+  buildWecomConfigPayload,
 } from './lib/configPayload';
 import type {
   AiConfig,
@@ -57,6 +59,7 @@ import type {
   TencentMeetingConfig,
   TestIntegrationResult,
   WechatShopConfig,
+  WecomConfig,
 } from './types';
 import './IntegrationsManagement.css';
 
@@ -93,6 +96,12 @@ const MODULE_META: Record<
     title: '微信小店配置',
     description: '用于微信小店回调验证和订单同步',
     icon: <ShopOutlined />,
+  },
+  wecom: {
+    label: '企业微信',
+    title: '企业微信配置',
+    description: '用于企业微信通讯录同步、外部联系人回调验证及 API 对接',
+    icon: <ClusterOutlined />,
   },
   storage: {
     label: '对象存储',
@@ -308,6 +317,7 @@ export function IntegrationsManagement() {
   const [tencentForm] = Form.useForm<TencentMeetingConfig>();
   const [larkForm] = Form.useForm<LarkConfig>();
   const [wechatForm] = Form.useForm<WechatShopConfig>();
+  const [wecomForm] = Form.useForm<WecomConfig>();
   const [storageForm] = Form.useForm<StorageConfig>();
   const [driveForm] = Form.useForm<DriveConfig>();
   const [fileScanningForm] = Form.useForm<FileScanningConfig>();
@@ -324,11 +334,22 @@ export function IntegrationsManagement() {
       if (module === 'tencent-meeting') tencentForm.setFieldsValue(value as TencentMeetingConfig);
       if (module === 'lark') larkForm.setFieldsValue(value as LarkConfig);
       if (module === 'wechat-shop') wechatForm.setFieldsValue(value as WechatShopConfig);
+      if (module === 'wecom') wecomForm.setFieldsValue(value as WecomConfig);
       if (module === 'storage') storageForm.setFieldsValue(value as StorageConfig);
       if (module === 'drive') driveForm.setFieldsValue(value as DriveConfig);
       if (module === 'file-scanning') fileScanningForm.setFieldsValue(value as FileScanningConfig);
     },
-    [aiForm, driveForm, fileScanningForm, larkForm, mailForm, storageForm, tencentForm, wechatForm]
+    [
+      aiForm,
+      driveForm,
+      fileScanningForm,
+      larkForm,
+      mailForm,
+      storageForm,
+      tencentForm,
+      wechatForm,
+      wecomForm,
+    ]
   );
 
   const loadSummaries = useCallback(async () => {
@@ -377,6 +398,8 @@ export function IntegrationsManagement() {
         return buildLarkConfigPayload(await larkForm.validateFields());
       case 'wechat-shop':
         return buildWechatShopConfigPayload(await wechatForm.validateFields());
+      case 'wecom':
+        return buildWecomConfigPayload(await wecomForm.validateFields());
       case 'storage':
         return buildStorageConfigPayload(await storageForm.validateFields());
       case 'drive':
@@ -452,8 +475,11 @@ export function IntegrationsManagement() {
     },
     {
       type: 'group' as const,
-      label: '交易集成',
-      children: [menuItem('wechat-shop', summaryMap.get('wechat-shop'))],
+      label: '通讯与协同',
+      children: [
+        menuItem('wecom', summaryMap.get('wecom')),
+        menuItem('wechat-shop', summaryMap.get('wechat-shop')),
+      ],
     },
     {
       type: 'group' as const,
@@ -510,6 +536,7 @@ export function IntegrationsManagement() {
               {activeModule === 'tencent-meeting' && <TencentMeetingFields form={tencentForm} />}
               {activeModule === 'lark' && <LarkFields form={larkForm} />}
               {activeModule === 'wechat-shop' && <WechatShopFields form={wechatForm} />}
+              {activeModule === 'wecom' && <WecomFields form={wecomForm} />}
               {activeModule === 'storage' && <StorageFields form={storageForm} />}
               {activeModule === 'drive' && <DriveFields form={driveForm} />}
               {activeModule === 'file-scanning' && <FileScanningFields form={fileScanningForm} />}
@@ -742,6 +769,38 @@ function WechatShopFields({
       </Form.Item>
       <Form.Item label="API Base URL" name="apiBaseUrl" rules={[{ required: true, type: 'url' }]}>
         <Input />
+      </Form.Item>
+    </Form>
+  );
+}
+
+function WecomFields({ form }: { form: ReturnType<typeof Form.useForm<WecomConfig>>[0] }) {
+  return (
+    <Form
+      className="integrations-form"
+      form={form}
+      layout="vertical"
+      initialValues={{
+        apiBaseUrl: 'https://qyapi.weixin.qq.com',
+      }}
+    >
+      <Divider titlePlacement="start">企业凭证</Divider>
+      <Form.Item label="企业 ID (Corp ID)" name="corpId" rules={[{ required: true }]}>
+        <Input placeholder="ww..." />
+      </Form.Item>
+      <Form.Item label="应用 Secret (Corp Secret)" name="corpSecret" rules={[{ required: true }]}>
+        <SecretInput placeholder="输入新 Corp Secret 以替换" />
+      </Form.Item>
+      <Divider titlePlacement="start">Webhook</Divider>
+      <Form.Item label="Webhook Token" name="webhookToken">
+        <SecretInput placeholder="输入新 Webhook Token 以替换" />
+      </Form.Item>
+      <Form.Item label="Encoding AES Key" name="encodingAesKey">
+        <SecretInput placeholder="输入新 Encoding AES Key 以替换" />
+      </Form.Item>
+      <Divider titlePlacement="start">API 地址</Divider>
+      <Form.Item label="API Base URL" name="apiBaseUrl" rules={[{ required: true, type: 'url' }]}>
+        <Input placeholder="https://qyapi.weixin.qq.com" />
       </Form.Item>
     </Form>
   );
