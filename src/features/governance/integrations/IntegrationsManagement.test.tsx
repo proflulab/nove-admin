@@ -46,10 +46,19 @@ describe('IntegrationsManagement', () => {
   beforeEach(() => {
     mocks.canWrite = true;
     mocks.listConfigs.mockResolvedValue(
-      ['mail', 'ai', 'tencent-meeting', 'lark', 'wechat-shop'].map((module) => ({
+      [
+        'mail',
+        'ai',
+        'tencent-meeting',
+        'lark',
+        'wechat-shop',
+        'storage',
+        'drive',
+        'file-scanning',
+      ].map((module) => ({
         orgId: 'org-1',
         module,
-        configured: module === 'mail',
+        configured: module === 'mail' || module === 'storage',
         source: module === 'mail' ? 'database' : 'default',
         updatedAt: null,
         environmentImportedAt: module === 'mail' ? '2026-09-01T00:00:00.000Z' : null,
@@ -108,6 +117,32 @@ describe('IntegrationsManagement', () => {
             webhookToken: '********',
             encodingAesKey: '',
             apiBaseUrl: 'https://api.weixin.qq.com',
+          },
+          storage: {
+            provider: 'OSS',
+            region: 'oss-cn-hangzhou',
+            bucket: 'test-bucket',
+            accessKeyId: 'test-ak',
+            accessKeySecret: '********',
+            publicBaseUrl: 'https://cdn.example.com',
+            signedUrlExpiresSeconds: 600,
+          },
+          drive: {
+            allowedExtensions: ['.pdf', '.docx'],
+            imageMaxMiB: 20,
+            documentMaxMiB: 100,
+            audioMaxMiB: 2048,
+            videoMaxMiB: 20480,
+            downloadUrlExpiresSeconds: 600,
+            recycleRetentionDays: 30,
+          },
+          'file-scanning': {
+            malwareScanProvider: 'ALIYUN_SAS',
+            aliyunSasRegionId: 'cn-beijing',
+            scanTimeoutMs: 300000,
+            scanPollIntervalMs: 3000,
+            clamAvPort: 3310,
+            clamAvTimeoutMs: 600000,
           },
         }[module],
       })
@@ -196,13 +231,41 @@ describe('IntegrationsManagement', () => {
     expect(screen.getAllByText('未配置').length).toBeGreaterThan(0);
   }, 15_000);
 
-  it('edits drive policies without a default organization or unsupported connection test', async () => {
+  it('edits drive policies without unsupported connection test', async () => {
     const user = userEvent.setup();
     render(<IntegrationsManagement />);
-    await user.click(await screen.findByText('云盘与会议文件'));
+    await user.click(await screen.findByText('云盘策略'));
     await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('drive'));
     await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
     expect(await screen.findByLabelText('允许扩展名')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
+  }, 15_000);
+
+  it('displays and edits storage configurations with connection testing', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('对象存储'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('storage'));
+    expect(await screen.findByText('存储服务商')).toBeInTheDocument();
+    expect(screen.getByText('test-bucket')).toBeInTheDocument();
+    expect(screen.getByText('复用私有存储桶')).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText(/私有存储桶/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/公共存储桶/)).toBeInTheDocument();
+    expect(screen.getByLabelText('AccessKey ID')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '测试连接' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
+  }, 15_000);
+
+  it('edits file scanning configurations', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('病毒扫描'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('file-scanning'));
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText('扫描服务')).toBeInTheDocument();
     await user.click(screen.getByRole('combobox', { name: '扫描服务' }));
     await user.click(screen.getByText('ClamAV', { selector: '.ant-select-item-option-content' }));
     expect(screen.getByLabelText('ClamAV 主机')).toBeVisible();
@@ -213,8 +276,6 @@ describe('IntegrationsManagement', () => {
     );
     expect(screen.getByLabelText('阿里云地域')).toBeVisible();
     expect(screen.getByLabelText('ClamAV 主机')).not.toBeVisible();
-    expect(screen.queryByLabelText('会议同步默认组织 ID')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
   }, 15_000);
 });

@@ -4,6 +4,7 @@ export type IntegrationModule =
   | 'tencent-meeting'
   | 'lark'
   | 'wechat-shop'
+  | 'storage'
   | 'drive'
   | 'file-scanning';
 
@@ -91,12 +92,24 @@ export interface FileScanningConfig {
   clamAvTimeoutMs?: number;
 }
 
+export interface StorageConfig {
+  provider?: 'OSS' | 'COS' | 'S3' | 'LOCAL';
+  region?: string;
+  bucket?: string;
+  publicBucket?: string;
+  accessKeyId?: string;
+  accessKeySecret?: string;
+  publicBaseUrl?: string;
+  signedUrlExpiresSeconds?: number;
+}
+
 export type IntegrationConfigMap = {
   mail: MailConfig;
   ai: AiConfig;
   'tencent-meeting': TencentMeetingConfig;
   lark: LarkConfig;
   'wechat-shop': WechatShopConfig;
+  storage: StorageConfig;
   drive: DriveConfig;
   'file-scanning': FileScanningConfig;
 };

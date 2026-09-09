@@ -7,7 +7,7 @@ export const driveRoutes: RouteConfig[] = [
   {
     path: '/drive',
     element: <DrivePage />,
-    title: '云盘',
+    title: '云盘管理',
     menu: true,
     permission: PERMISSIONS.DRIVE.READ,
     icon: <CloudOutlined />,

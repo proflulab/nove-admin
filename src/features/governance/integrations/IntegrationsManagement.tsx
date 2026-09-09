@@ -1,6 +1,7 @@
 import {
   ApiOutlined,
   CloudOutlined,
+  CloudServerOutlined,
   EditOutlined,
   MailOutlined,
   QuestionCircleOutlined,
@@ -38,13 +39,13 @@ import {
   buildAiConfigPayload,
   buildLarkConfigPayload,
   buildMailConfigPayload,
+  buildStorageConfigPayload,
   buildTencentMeetingConfigPayload,
   buildWechatShopConfigPayload,
 } from './lib/configPayload';
 import type {
   AiConfig,
   IntegrationDetail,
-  IntegrationSource,
   IntegrationSummary,
   DriveConfig,
   FileScanningConfig,
@@ -52,6 +53,7 @@ import type {
   MailConfig,
   IntegrationConfigMap,
   IntegrationModule,
+  StorageConfig,
   TencentMeetingConfig,
   TestIntegrationResult,
   WechatShopConfig,
@@ -92,9 +94,15 @@ const MODULE_META: Record<
     description: '用于微信小店回调验证和订单同步',
     icon: <ShopOutlined />,
   },
+  storage: {
+    label: '对象存储',
+    title: '对象存储配置',
+    description: '配置阿里云 OSS 或兼容存储，用于云盘、头像及附件存储',
+    icon: <CloudServerOutlined />,
+  },
   drive: {
-    label: '云盘与会议文件',
-    title: '云盘文件策略',
+    label: '云盘策略',
+    title: '云盘策略配置',
     description: '控制文件白名单、容量限制和下载回收站策略',
     icon: <CloudOutlined />,
   },
@@ -104,11 +112,6 @@ const MODULE_META: Record<
     description: '选择扫描引擎并配置 ClamAV 或阿里云安全中心参数',
     icon: <SecurityScanOutlined />,
   },
-};
-
-const SOURCE_TEXT: Record<IntegrationSource, string> = {
-  database: '数据库',
-  default: '默认值',
 };
 
 type SecretInputProps = ComponentProps<typeof Input.Password>;
@@ -220,12 +223,9 @@ function ConfigPanel({
       extra={
         <Space>
           {summary && (
-            <>
-              <Tag color={summary.configured ? 'success' : 'default'}>
-                {summary.configured ? '已配置' : '未配置'}
-              </Tag>
-              <Tag>{SOURCE_TEXT[summary.source]}</Tag>
-            </>
+            <Tag color={summary.configured ? 'success' : 'default'}>
+              {summary.configured ? '已配置' : '未配置'}
+            </Tag>
           )}
           {canWrite && !isEditing && (
             <Button type="primary" icon={<EditOutlined />} onClick={onEdit}>
@@ -308,6 +308,7 @@ export function IntegrationsManagement() {
   const [tencentForm] = Form.useForm<TencentMeetingConfig>();
   const [larkForm] = Form.useForm<LarkConfig>();
   const [wechatForm] = Form.useForm<WechatShopConfig>();
+  const [storageForm] = Form.useForm<StorageConfig>();
   const [driveForm] = Form.useForm<DriveConfig>();
   const [fileScanningForm] = Form.useForm<FileScanningConfig>();
 
@@ -323,9 +324,11 @@ export function IntegrationsManagement() {
       if (module === 'tencent-meeting') tencentForm.setFieldsValue(value as TencentMeetingConfig);
       if (module === 'lark') larkForm.setFieldsValue(value as LarkConfig);
       if (module === 'wechat-shop') wechatForm.setFieldsValue(value as WechatShopConfig);
+      if (module === 'storage') storageForm.setFieldsValue(value as StorageConfig);
       if (module === 'drive') driveForm.setFieldsValue(value as DriveConfig);
+      if (module === 'file-scanning') fileScanningForm.setFieldsValue(value as FileScanningConfig);
     },
-    [aiForm, driveForm, larkForm, mailForm, tencentForm, wechatForm]
+    [aiForm, driveForm, fileScanningForm, larkForm, mailForm, storageForm, tencentForm, wechatForm]
   );
 
   const loadSummaries = useCallback(async () => {
@@ -374,8 +377,12 @@ export function IntegrationsManagement() {
         return buildLarkConfigPayload(await larkForm.validateFields());
       case 'wechat-shop':
         return buildWechatShopConfigPayload(await wechatForm.validateFields());
+      case 'storage':
+        return buildStorageConfigPayload(await storageForm.validateFields());
       case 'drive':
         return driveForm.validateFields();
+      case 'file-scanning':
+        return fileScanningForm.validateFields();
     }
   };
 
@@ -451,7 +458,10 @@ export function IntegrationsManagement() {
     {
       type: 'group' as const,
       label: '存储服务',
-      children: [menuItem('drive', summaryMap.get('drive'))],
+      children: [
+        menuItem('storage', summaryMap.get('storage')),
+        menuItem('drive', summaryMap.get('drive')),
+      ],
     },
     {
       type: 'group' as const,
@@ -500,6 +510,7 @@ export function IntegrationsManagement() {
               {activeModule === 'tencent-meeting' && <TencentMeetingFields form={tencentForm} />}
               {activeModule === 'lark' && <LarkFields form={larkForm} />}
               {activeModule === 'wechat-shop' && <WechatShopFields form={wechatForm} />}
+              {activeModule === 'storage' && <StorageFields form={storageForm} />}
               {activeModule === 'drive' && <DriveFields form={driveForm} />}
               {activeModule === 'file-scanning' && <FileScanningFields form={fileScanningForm} />}
             </>
@@ -866,6 +877,122 @@ function FileScanningFields({
         <Col xs={12} md={6}>
           <Form.Item label="扫描超时（毫秒）" name="clamAvTimeoutMs">
             <InputNumber min={1000} max={3600000} style={{ width: '100%' }} />
+          </Form.Item>
+        </Col>
+      </Row>
+    </Form>
+  );
+}
+
+function StorageFields({ form }: { form: ReturnType<typeof Form.useForm<StorageConfig>>[0] }) {
+  return (
+    <Form
+      className="integrations-form"
+      form={form}
+      layout="vertical"
+      initialValues={{
+        provider: 'OSS',
+        region: 'oss-cn-hangzhou',
+        signedUrlExpiresSeconds: 600,
+      }}
+    >
+      <Alert
+        type="info"
+        showIcon
+        title="配置对象存储服务。未配置或删除数据库配置时，服务将处于未配置状态。"
+      />
+      <Divider titlePlacement="start">存储服务商与地域</Divider>
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="存储服务商"
+            name="provider"
+            rules={[{ required: true, message: '请选择存储服务商' }]}
+          >
+            <Select
+              options={[
+                { label: '阿里云 OSS', value: 'OSS' },
+                { label: '腾讯云 COS', value: 'COS' },
+                { label: 'AWS S3', value: 'S3' },
+                { label: '本地存储 (Local)', value: 'LOCAL' },
+              ]}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="地域 (Region)"
+            name="region"
+            rules={[{ required: true, message: '请输入地域代码' }]}
+            tooltip="例如阿里云杭州 oss-cn-hangzhou，北京 oss-cn-beijing"
+          >
+            <Input placeholder="oss-cn-hangzhou" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Divider titlePlacement="start">存储桶与访问凭据</Divider>
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="私有存储桶 (云盘与附件)"
+            name="bucket"
+            rules={[{ required: true, message: '请输入存储桶名称' }]}
+            tooltip="用于云盘文件、会议录音及敏感附件，默认私有读写"
+          >
+            <Input placeholder="my-private-bucket" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="公共存储桶 (头像与公开媒体)"
+            name="publicBucket"
+            tooltip="可选。用于用户头像等公开媒体资源。若留空，将自动复用私有存储桶"
+          >
+            <Input placeholder="留空则复用私有存储桶" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={16}>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="AccessKey ID"
+            name="accessKeyId"
+            rules={[{ required: true, message: '请输入 AccessKey ID' }]}
+          >
+            <Input placeholder="LTAI..." />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={12}>
+          <Form.Item
+            label="AccessKey Secret"
+            name="accessKeySecret"
+            tooltip="留空表示保持已保存的密钥不变"
+          >
+            <SecretInput placeholder="留空表示保持当前密钥不变" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Divider titlePlacement="start">访问地址与时效</Divider>
+      <Row gutter={16}>
+        <Col xs={24} md={16}>
+          <Form.Item
+            label="公开访问地址 (Base URL)"
+            name="publicBaseUrl"
+            tooltip="可选。CDN 加速域名或 Bucket 公网访问基地址，如 https://cdn.example.com，末尾请勿包含斜杠"
+          >
+            <Input placeholder="https://my-bucket.oss-cn-hangzhou.aliyuncs.com" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item
+            label="签名有效时长（秒）"
+            name="signedUrlExpiresSeconds"
+            tooltip="用于头像、云盘等临时签名下载 URL，允许 60～3600 秒"
+          >
+            <InputNumber min={60} max={3600} style={{ width: '100%' }} placeholder="600" />
           </Form.Item>
         </Col>
       </Row>

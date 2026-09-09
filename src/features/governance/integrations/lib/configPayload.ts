@@ -2,6 +2,7 @@ import type {
   AiConfig,
   LarkConfig,
   MailConfig,
+  StorageConfig,
   TencentMeetingConfig,
   WechatShopConfig,
 } from '../types';
@@ -45,4 +46,8 @@ export function buildTencentMeetingConfigPayload(
 
 export function buildLarkConfigPayload(values: LarkConfig): LarkConfig {
   return omitEmptySecrets(values, ['appSecret', 'eventEncryptKey', 'eventVerificationToken']);
+}
+
+export function buildStorageConfigPayload(values: StorageConfig): StorageConfig {
+  return omitEmptySecrets(values, ['accessKeySecret']);
 }

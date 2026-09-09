@@ -22,8 +22,6 @@ import { useAuth } from '../../../shared/hooks/useAuth';
 import Input from 'antd/es/input';
 import message from 'antd/es/message';
 import Modal from 'antd/es/modal';
-import List from 'antd/es/list';
-import Divider from 'antd/es/divider';
 import Progress from 'antd/es/progress';
 import Select from 'antd/es/select';
 import Space from 'antd/es/space';
@@ -35,6 +33,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Perm } from '../../../app/guards/Perm';
 import { PERMISSIONS } from '../../../shared/utils/permissions';
 import { driveApi } from '../api/driveApi';
+import { DriveDetailModal } from '../components/DriveDetailModal';
+import { DrivePermissionModal } from '../components/DrivePermissionModal';
 import type { DriveNode, DriveSpace } from '../model/types';
 import './DrivePage.css';
 
@@ -89,42 +89,7 @@ export function DrivePage() {
   const [search, setSearch] = useState('');
   const [uploading, setUploading] = useState<Record<string, number>>({});
   const [detailNode, setDetailNode] = useState<DriveNode | null>(null);
-  const [details, setDetails] = useState<{
-    version?: {
-      version: number;
-      contentType: string;
-      sizeBytes: string;
-      checksumSha256: string | null;
-      status: string;
-    };
-    bindings: Array<{
-      id: string;
-      targetType: string;
-      targetId: string;
-      purpose: string;
-      active: boolean;
-    }>;
-    audit: Array<{
-      id: string;
-      action: string;
-      createdAt: string;
-      actor: { username: string | null; email: string | null } | null;
-    }>;
-  }>({ bindings: [], audit: [] });
   const [grantNode, setGrantNode] = useState<DriveNode | null>(null);
-  const [grants, setGrants] = useState<
-    Array<{
-      id: string;
-      principalType: string;
-      principalId: string;
-      effect: string;
-      actions: string[];
-    }>
-  >([]);
-  const [grantPrincipalType, setGrantPrincipalType] = useState('USER');
-  const [grantPrincipalId, setGrantPrincipalId] = useState('');
-  const [grantEffect, setGrantEffect] = useState('ALLOW');
-  const [grantActions, setGrantActions] = useState<string[]>(['VIEW', 'DOWNLOAD']);
 
   const parentId = path.at(-1)?.id ?? null;
 
@@ -255,19 +220,12 @@ export function DrivePage() {
     window.location.assign(result.url);
   };
 
-  const openDetails = async (node: DriveNode) => {
+  const openDetails = (node: DriveNode) => {
     setDetailNode(node);
-    const [audit, file, bindings] = await Promise.all([
-      driveApi.listAudit(node.id),
-      node.fileId ? driveApi.getFile(node.fileId) : Promise.resolve(null),
-      node.fileId ? driveApi.listBindings(node.fileId) : Promise.resolve([]),
-    ]);
-    setDetails({ version: file?.version, bindings, audit });
   };
 
-  const openGrants = async (node: DriveNode) => {
+  const openGrants = (node: DriveNode) => {
     setGrantNode(node);
-    setGrants(await driveApi.listGrants(node.id));
   };
 
   const moveNode = (node: DriveNode) => {
@@ -561,131 +519,25 @@ export function DrivePage() {
         />
       </Card>
 
-      <Modal
-        title={detailNode?.name}
+      <DriveDetailModal
+        node={detailNode}
+        space={spaces.find((s) => s.id === (detailNode?.spaceId ?? spaceId))}
+        path={path}
         open={Boolean(detailNode)}
-        footer={null}
-        onCancel={() => setDetailNode(null)}
-      >
-        {details.version ? (
-          <div>
-            <p>
-              版本：v{details.version.version} · {details.version.status}
-            </p>
-            <p>
-              格式：{details.version.contentType} · {formatBytes(details.version.sizeBytes)}
-            </p>
-            <p>
-              SHA-256：<code>{details.version.checksumSha256 ?? '未记录'}</code>
-            </p>
-          </div>
-        ) : (
-          <p>文件夹</p>
-        )}
-        <Divider titlePlacement="start">业务关联</Divider>
-        <List
-          size="small"
-          dataSource={details.bindings}
-          locale={{ emptyText: '无业务关联' }}
-          renderItem={(item) => (
-            <List.Item>
-              {item.targetType} / {item.targetId} {item.purpose ? `· ${item.purpose}` : ''}
-            </List.Item>
-          )}
-        />
-        <Divider titlePlacement="start">审计记录</Divider>
-        <List
-          size="small"
-          dataSource={details.audit}
-          locale={{ emptyText: '暂无记录' }}
-          renderItem={(item) => (
-            <List.Item>
-              {item.action} · {new Date(item.createdAt).toLocaleString()} ·{' '}
-              {item.actor?.username || item.actor?.email || '系统'}
-            </List.Item>
-          )}
-        />
-      </Modal>
-
-      <Modal
-        title={`${grantNode?.name ?? ''} 权限`}
-        open={Boolean(grantNode)}
-        onCancel={() => setGrantNode(null)}
-        onOk={async () => {
-          if (!grantNode || !grantPrincipalId.trim()) return;
-          await driveApi.putGrant(grantNode.id, {
-            principalType: grantPrincipalType,
-            principalId: grantPrincipalId.trim(),
-            effect: grantEffect,
-            actions: grantActions,
-          });
-          setGrants(await driveApi.listGrants(grantNode.id));
-          setGrantPrincipalId('');
+        onClose={() => setDetailNode(null)}
+        onOpenPermissions={(node) => {
+          setDetailNode(null);
+          openGrants(node);
         }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Select
-            value={grantPrincipalType}
-            onChange={setGrantPrincipalType}
-            options={['USER', 'ORG_MEMBER', 'DEPARTMENT', 'ROLE', 'ORG'].map((value) => ({
-              value,
-              label: value,
-            }))}
-          />
-          <Input
-            placeholder="授权主体 ID"
-            value={grantPrincipalId}
-            onChange={(event) => setGrantPrincipalId(event.target.value)}
-          />
-          <Select
-            value={grantEffect}
-            onChange={setGrantEffect}
-            options={['ALLOW', 'DENY'].map((value) => ({ value, label: value }))}
-          />
-          <Select
-            mode="multiple"
-            value={grantActions}
-            onChange={setGrantActions}
-            options={[
-              'VIEW',
-              'DOWNLOAD',
-              'UPLOAD',
-              'RENAME',
-              'MOVE',
-              'SHARE',
-              'DELETE',
-              'MANAGE_ACL',
-            ].map((value) => ({ value, label: value }))}
-          />
-        </Space>
-        <Divider />
-        <List
-          size="small"
-          dataSource={grants}
-          locale={{ emptyText: '暂无显式授权' }}
-          renderItem={(grant) => (
-            <List.Item
-              actions={[
-                <Button
-                  key="delete"
-                  danger
-                  type="link"
-                  onClick={async () => {
-                    if (!grantNode) return;
-                    await driveApi.deleteGrant(grantNode.id, grant.id);
-                    setGrants(await driveApi.listGrants(grantNode.id));
-                  }}
-                >
-                  删除
-                </Button>,
-              ]}
-            >
-              {grant.effect} · {grant.principalType}:{grant.principalId} ·{' '}
-              {grant.actions.join(', ')}
-            </List.Item>
-          )}
-        />
-      </Modal>
+        onDownload={(node) => void download(node)}
+      />
+
+      <DrivePermissionModal
+        node={grantNode}
+        space={spaces.find((s) => s.id === spaceId)}
+        open={Boolean(grantNode)}
+        onClose={() => setGrantNode(null)}
+      />
     </div>
   );
 }

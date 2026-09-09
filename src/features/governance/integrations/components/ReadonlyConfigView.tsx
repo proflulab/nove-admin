@@ -23,6 +23,10 @@ const PROVIDER_LABELS: Record<string, string> = {
   custom: '自定义兼容服务',
   ALIYUN_SAS: '阿里云安全中心',
   CLAMAV: 'ClamAV',
+  OSS: '阿里云 OSS',
+  COS: '腾讯云 COS',
+  S3: 'AWS S3',
+  LOCAL: '本地存储',
 };
 
 const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
@@ -169,6 +173,26 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
       ],
     },
   ],
+  storage: [
+    {
+      title: '存储配置',
+      fields: [
+        { key: 'provider', label: '存储服务商', kind: 'provider' },
+        { key: 'region', label: '地域 (Region)' },
+        { key: 'bucket', label: '私有存储桶' },
+        { key: 'publicBucket', label: '公共存储桶' },
+        { key: 'publicBaseUrl', label: '公开访问地址', fullWidth: true },
+        { key: 'signedUrlExpiresSeconds', label: '签名有效时长（秒）' },
+      ],
+    },
+    {
+      title: '访问凭据',
+      fields: [
+        { key: 'accessKeyId', label: 'AccessKey ID', fullWidth: true },
+        { key: 'accessKeySecret', label: 'AccessKey Secret', kind: 'secret', fullWidth: true },
+      ],
+    },
+  ],
 };
 
 function hasValue(value: unknown): boolean {
@@ -177,6 +201,7 @@ function hasValue(value: unknown): boolean {
 
 function renderValue(field: ReadonlyField, value: unknown): ReactNode {
   if (field.key === 'malwareScanProvider' && !hasValue(value)) return '跟随服务端配置';
+  if (field.key === 'publicBucket' && !hasValue(value)) return '复用私有存储桶';
   if (!hasValue(value)) return <span className="integrations-readonly-empty">未配置</span>;
 
   if (field.kind === 'secret') return <Tag color="success">已配置（不可查看）</Tag>;
