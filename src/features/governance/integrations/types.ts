@@ -1,4 +1,12 @@
-export type IntegrationModule = 'mail' | 'ai' | 'tencent-meeting' | 'lark' | 'wechat-shop';
+export type IntegrationModule =
+  | 'mail'
+  | 'ai'
+  | 'tencent-meeting'
+  | 'lark'
+  | 'wechat-shop'
+  | 'storage'
+  | 'drive'
+  | 'file-scanning';
 
 export type IntegrationSource = 'database' | 'default';
 
@@ -64,12 +72,46 @@ export interface WechatShopConfig {
   apiBaseUrl?: string;
 }
 
+export interface DriveConfig {
+  downloadUrlExpiresSeconds?: number;
+  recycleRetentionDays?: number;
+  allowedExtensions?: string[];
+  imageMaxMiB?: number;
+  documentMaxMiB?: number;
+  audioMaxMiB?: number;
+  videoMaxMiB?: number;
+}
+
+export interface FileScanningConfig {
+  malwareScanProvider?: 'ALIYUN_SAS' | 'CLAMAV';
+  aliyunSasRegionId?: string;
+  scanTimeoutMs?: number;
+  scanPollIntervalMs?: number;
+  clamAvHost?: string;
+  clamAvPort?: number;
+  clamAvTimeoutMs?: number;
+}
+
+export interface StorageConfig {
+  provider?: 'OSS' | 'COS' | 'S3' | 'LOCAL';
+  region?: string;
+  bucket?: string;
+  publicBucket?: string;
+  accessKeyId?: string;
+  accessKeySecret?: string;
+  publicBaseUrl?: string;
+  signedUrlExpiresSeconds?: number;
+}
+
 export type IntegrationConfigMap = {
   mail: MailConfig;
   ai: AiConfig;
   'tencent-meeting': TencentMeetingConfig;
   lark: LarkConfig;
   'wechat-shop': WechatShopConfig;
+  storage: StorageConfig;
+  drive: DriveConfig;
+  'file-scanning': FileScanningConfig;
 };
 
 export interface SaveIntegrationResult {

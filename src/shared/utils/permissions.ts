@@ -135,6 +135,14 @@ export const PERMISSIONS = {
     UPDATE: 'tracking-report:update',
     DELETE: 'tracking-report:delete',
   },
+  DRIVE: {
+    READ: 'drive:read',
+    UPLOAD: 'drive:upload',
+    UPDATE: 'drive:update',
+    DELETE: 'drive:delete',
+    MANAGE_ACL: 'drive:manage-acl',
+    ADMIN: 'drive:admin',
+  },
 } as const;
 
 export type Permission =

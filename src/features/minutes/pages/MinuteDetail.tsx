@@ -1,6 +1,7 @@
 import {
   ArrowLeftOutlined,
   CalendarOutlined,
+  CloudDownloadOutlined,
   CopyOutlined,
   DeleteOutlined,
   TeamOutlined,
@@ -10,6 +11,7 @@ import Button from 'antd/es/button';
 import Card from 'antd/es/card';
 import Empty from 'antd/es/empty';
 import Input from 'antd/es/input';
+import List from 'antd/es/list';
 import message from 'antd/es/message';
 import Popconfirm from 'antd/es/popconfirm';
 import Skeleton from 'antd/es/skeleton';
@@ -22,6 +24,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../../shared/hooks/useAuth';
 import { PERMISSIONS } from '../../../shared/utils/permissions';
+import { driveApi } from '../../drive/api/driveApi';
+import type { MinuteDriveFile } from '../../drive/model/types';
 import {
   formatDateTime,
   formatDuration,
@@ -59,6 +63,18 @@ function participantContact(participant: MeetingParticipant) {
   const user = participant.user;
   if (user) return user.email || [user.countryCode, user.phone].filter(Boolean).join(' ') || '-';
   return participant.platformUser?.platform || '未关联系统账号';
+}
+
+function formatBytes(value: string | null) {
+  if (!value) return '-';
+  let size = Number(value);
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+  return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
 }
 
 function renderMarkdown(content: string) {
@@ -106,6 +122,7 @@ export function MinuteDetail() {
   const canReadSummary = checkPermission(PERMISSIONS.MINUTE_SUMMARY.READ);
   const canReadMeeting = checkPermission(PERMISSIONS.MEETING.READ);
   const canReadSpeakerSummary = checkPermission(PERMISSIONS.SPEAKER_SUMMARY.READ);
+  const canReadDrive = checkPermission(PERMISSIONS.DRIVE.READ);
   const canDelete = checkPermission(PERMISSIONS.MINUTE.DELETE);
 
   const [minute, setMinute] = useState<Minute | null>(null);
@@ -116,12 +133,14 @@ export function MinuteDetail() {
   const [participantTotal, setParticipantTotal] = useState(0);
   const [participantSearch, setParticipantSearch] = useState('');
   const [speakerSummaries, setSpeakerSummaries] = useState<SpeakerSummary[]>([]);
+  const [files, setFiles] = useState<MinuteDriveFile[]>([]);
   const [activeTab, setActiveTab] = useState(canReadSummary ? 'summary' : 'transcript');
   const [expandedParticipantId, setExpandedParticipantId] = useState<string | null>(null);
   const [visibleTranscriptCount, setVisibleTranscriptCount] = useState(200);
   const [transcriptLoaded, setTranscriptLoaded] = useState(false);
   const [participantsLoaded, setParticipantsLoaded] = useState(false);
   const [speakerSummariesLoaded, setSpeakerSummariesLoaded] = useState(false);
+  const [filesLoaded, setFilesLoaded] = useState(false);
 
   const [minuteLoading, setMinuteLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(false);
@@ -129,6 +148,7 @@ export function MinuteDetail() {
   const [meetingLoading, setMeetingLoading] = useState(false);
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [speakerSummariesLoading, setSpeakerSummariesLoading] = useState(false);
+  const [filesLoading, setFilesLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const [minuteError, setMinuteError] = useState<string | null>(null);
@@ -137,6 +157,7 @@ export function MinuteDetail() {
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [participantsError, setParticipantsError] = useState<string | null>(null);
   const [speakerSummariesError, setSpeakerSummariesError] = useState<string | null>(null);
+  const [filesError, setFilesError] = useState<string | null>(null);
 
   const fetchMinute = useCallback(async () => {
     if (!id) return;
@@ -149,12 +170,14 @@ export function MinuteDetail() {
     setParticipantTotal(0);
     setParticipantSearch('');
     setSpeakerSummaries([]);
+    setFiles([]);
     setExpandedParticipantId(null);
     setSummaryError(null);
     setTranscriptError(null);
     setMeetingError(null);
     setParticipantsError(null);
     setSpeakerSummariesError(null);
+    setFilesError(null);
     try {
       const result = await minuteApi.getById(id);
       setMinute(result);
@@ -162,6 +185,7 @@ export function MinuteDetail() {
       setTranscriptLoaded(false);
       setParticipantsLoaded(false);
       setSpeakerSummariesLoaded(false);
+      setFilesLoaded(false);
     } catch {
       setMinute(null);
       setMinuteError('妙记详情暂时无法读取');
@@ -255,6 +279,21 @@ export function MinuteDetail() {
     }
   }, [canReadSpeakerSummary, id]);
 
+  const fetchFiles = useCallback(async () => {
+    if (!id || !canReadDrive) return;
+    setFilesLoading(true);
+    setFilesError(null);
+    try {
+      setFiles(await minuteApi.getFiles(id));
+    } catch {
+      setFiles([]);
+      setFilesError('妙记文件暂时无法读取');
+    } finally {
+      setFilesLoading(false);
+      setFilesLoaded(true);
+    }
+  }, [canReadDrive, id]);
+
   useEffect(() => {
     void fetchMinute();
   }, [fetchMinute]);
@@ -289,6 +328,10 @@ export function MinuteDetail() {
     speakerSummariesLoaded,
     speakerSummariesLoading,
   ]);
+
+  useEffect(() => {
+    if (activeTab === 'files' && !filesLoading && !filesLoaded) void fetchFiles();
+  }, [activeTab, fetchFiles, filesLoaded, filesLoading]);
 
   const speakerSummaryByPlatformUserId = useMemo(
     () => new Map(speakerSummaries.map((item) => [item.platformUserId, item])),
@@ -593,6 +636,44 @@ export function MinuteDetail() {
     </div>
   );
 
+  const filesPane = filesLoading ? (
+    <Skeleton active paragraph={{ rows: 5 }} />
+  ) : filesError ? (
+    <RetryEmpty description={filesError} onRetry={() => void fetchFiles()} />
+  ) : (
+    <List
+      className="minute-file-list"
+      dataSource={files}
+      locale={{ emptyText: '当前妙记暂无云盘文件' }}
+      renderItem={(file) => (
+        <List.Item
+          actions={[
+            <Button
+              key="download"
+              icon={<CloudDownloadOutlined />}
+              disabled={file.status !== 'ACTIVE'}
+              onClick={async () => {
+                try {
+                  const result = await driveApi.createDownloadUrl(file.fileId);
+                  window.location.assign(result.url);
+                } catch {
+                  message.error('创建文件下载链接失败');
+                }
+              }}
+            >
+              下载
+            </Button>,
+          ]}
+        >
+          <List.Item.Meta
+            title={file.name}
+            description={`${file.contentType || '未知类型'} · ${formatBytes(file.sizeBytes)} · ${file.status || 'UNKNOWN'}`}
+          />
+        </List.Item>
+      )}
+    />
+  );
+
   const tabItems = [
     ...(canReadSummary ? [{ key: 'summary', label: '纪要', children: summaryPane }] : []),
     ...(canReadMeeting && minute.meetingId && minute.meeting
@@ -605,6 +686,7 @@ export function MinuteDetail() {
         ]
       : []),
     { key: 'transcript', label: `逐字稿 ${transcript.length || ''}`, children: transcriptPane },
+    ...(canReadDrive ? [{ key: 'files', label: '文件', children: filesPane }] : []),
     { key: 'info', label: '基本信息', children: infoPane },
   ];
 
