@@ -40,6 +40,15 @@ function isPublicAuthRequest(config: RetryableRequestConfig) {
   );
 }
 
+/**
+ * 判断错误是否为后端明确拒绝（响应到达且状态码为 401），
+ * 与"网络层失败（请求未送达后端、无响应）"相区分。
+ * 供拦截器与业务层（如登出流程）统一使用。
+ */
+export function isBackendRejection(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 401;
+}
+
 function refreshAccessToken() {
   refreshPromise ??= axios
     .post<RefreshTokenResponse>(
