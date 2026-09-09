@@ -6,6 +6,7 @@ import {
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
+import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
 import Col from 'antd/es/col';
 import DatePicker from 'antd/es/date-picker';
@@ -36,6 +37,7 @@ import { PERMISSIONS } from '../../../../shared/utils/permissions';
 import { orderRefundApi } from '../api/orderRefundApi';
 import { RefundOrderSelect } from '../components/RefundOrderSelect';
 import type {
+  BenefitCalculationPreview,
   CreateOrderRefund,
   OrderRefund,
   RefundChannel,
@@ -121,6 +123,10 @@ export function OrderRefundManagement() {
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<OrderRefund | null>(null);
+  const [calculationPreview, setCalculationPreview] = useState<BenefitCalculationPreview | null>(
+    null
+  );
+  const [isCalculating, setIsCalculating] = useState(false);
   const [form] = Form.useForm<RefundFormValues>();
 
   const { data, isLoading, isFetching, refetch } = useTableQuery<OrderRefund>({
@@ -129,9 +135,30 @@ export function OrderRefundManagement() {
     params: filters,
   });
 
+  const handleCalculateBenefit = async (orderId?: string) => {
+    if (!orderId) {
+      setCalculationPreview(null);
+      return;
+    }
+    setIsCalculating(true);
+    try {
+      const preview = await orderRefundApi.previewCalculation(orderId);
+      setCalculationPreview(preview);
+      const currentDays = form.getFieldValue('benefitUsedDays');
+      if (currentDays === undefined || currentDays === null) {
+        form.setFieldValue('benefitUsedDays', preview.effectiveUsedDays);
+      }
+    } catch {
+      // 忽略或由用户手动测算时处理
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
   const closeModal = () => {
     setModalOpen(false);
     setEditing(null);
+    setCalculationPreview(null);
     form.resetFields();
   };
 
@@ -183,6 +210,7 @@ export function OrderRefundManagement() {
 
   const openEdit = (record: OrderRefund) => {
     setEditing(record);
+    setCalculationPreview(null);
     form.setFieldsValue({
       afterSaleCode: record.afterSaleCode,
       orderId: record.orderId ?? undefined,
@@ -197,6 +225,9 @@ export function OrderRefundManagement() {
       productCategory: record.productCategory ?? undefined,
       submittedAt: record.submittedAt ? dayjs(record.submittedAt) : undefined,
     });
+    if (record.orderId) {
+      void handleCalculateBenefit(record.orderId);
+    }
     setModalOpen(true);
   };
 
@@ -442,9 +473,74 @@ export function OrderRefundManagement() {
             </Col>
             <Col span={12}>
               <Form.Item name="orderId" label="关联订单">
-                <RefundOrderSelect initialOrder={editing?.order} />
+                <RefundOrderSelect
+                  initialOrder={editing?.order}
+                  onChange={(orderId) => {
+                    form.setFieldValue('orderId', orderId);
+                    if (orderId) {
+                      void handleCalculateBenefit(orderId);
+                    } else {
+                      setCalculationPreview(null);
+                    }
+                  }}
+                />
               </Form.Item>
             </Col>
+            {calculationPreview && (
+              <Col span={24}>
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                      }}
+                    >
+                      <span>
+                        权益核算参考：自然经历 <strong>{calculationPreview.naturalDays}</strong> 天
+                        {calculationPreview.totalFrozenDays > 0 ? (
+                          <>
+                            ，累计冻结{' '}
+                            <Tag color="warning" style={{ margin: '0 2px' }}>
+                              {calculationPreview.totalFrozenDays} 天
+                            </Tag>
+                          </>
+                        ) : null}
+                        {calculationPreview.isCurrentlyFrozen ? (
+                          <Tag color="error" style={{ margin: '0 2px' }}>
+                            当前处于冻结中
+                          </Tag>
+                        ) : null}
+                        ，扣除后有效使用 <strong>{calculationPreview.effectiveUsedDays}</strong>{' '}
+                        天（剩余约 {calculationPreview.remainingDays} 天）。建议退款：
+                        <strong style={{ color: '#1677ff' }}>
+                          ¥{(calculationPreview.suggestedRefundAmount / 100).toFixed(2)}
+                        </strong>
+                      </span>
+                      <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => {
+                          form.setFieldsValue({
+                            benefitUsedDays: calculationPreview.effectiveUsedDays,
+                            refundAmount: calculationPreview.suggestedRefundAmount,
+                          });
+                          message.success('已应用智能核算天数与建议退款金额');
+                        }}
+                      >
+                        应用建议值
+                      </Button>
+                    </div>
+                  }
+                />
+              </Col>
+            )}
             <Col span={8}>
               <Form.Item name="refundAmount" label="退款金额（分）">
                 <InputNumber min={0} precision={0} style={{ width: '100%' }} />
@@ -456,7 +552,32 @@ export function OrderRefundManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="benefitUsedDays" label="权益使用天数">
+              <Form.Item
+                name="benefitUsedDays"
+                label={
+                  <Space size={4}>
+                    <span>权益使用天数</span>
+                    <Tooltip title="基于关联订单总天数与冻结期自动核算有效使用天数">
+                      <Button
+                        type="link"
+                        size="small"
+                        style={{ padding: 0, height: 'auto', fontSize: 12 }}
+                        loading={isCalculating}
+                        onClick={() => {
+                          const currentOrderId = form.getFieldValue('orderId');
+                          if (!currentOrderId) {
+                            message.warning('请先选择关联订单');
+                            return;
+                          }
+                          void handleCalculateBenefit(currentOrderId);
+                        }}
+                      >
+                        智能核算
+                      </Button>
+                    </Tooltip>
+                  </Space>
+                }
+              >
                 <InputNumber min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Col>

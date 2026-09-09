@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import {
+  ClockCircleOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
@@ -33,6 +34,7 @@ import {
 } from '../../../../shared/hooks/useTableQuery';
 import { PERMISSIONS } from '../../../../shared/utils/permissions';
 import { orderApi } from '../api/orderApi';
+import { OrderBenefitModal } from '../components/OrderBenefitModal';
 import { OrderChannelSelect } from '../components/OrderChannelSelect';
 import { OrderProductSelect } from '../components/OrderProductSelect';
 import { ORDER_STATUS_OPTIONS } from '../components/orderStatusOptions';
@@ -175,6 +177,8 @@ export function OrderManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [formMode, setFormMode] = useState<OrderFormMode>('create');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [benefitModalOpen, setBenefitModalOpen] = useState(false);
+  const [benefitModalOrder, setBenefitModalOrder] = useState<Order | null>(null);
   const [form] = Form.useForm<OrderFormValues>();
 
   const {
@@ -439,8 +443,24 @@ export function OrderManagement() {
       title: '权益结束',
       dataIndex: 'benefitEnd',
       key: 'benefitEnd',
-      width: 180,
-      render: (value: string | null) => formatDateTime(value),
+      width: 200,
+      render: (value: string | null, record) => (
+        <Space direction="vertical" size={2}>
+          <span>{formatDateTime(value)}</span>
+          <Space size={4}>
+            {record.status === 'FROZEN' && (
+              <Tag color="cyan" style={{ margin: 0 }}>
+                已冻结
+              </Tag>
+            )}
+            {record.frozenDays > 0 && (
+              <Tag color="default" style={{ margin: 0 }}>
+                累计冻结 {record.frozenDays} 天
+              </Tag>
+            )}
+          </Space>
+        </Space>
+      ),
     },
     {
       title: '创建时间',
@@ -457,6 +477,19 @@ export function OrderManagement() {
       width: 120,
       render: (_: unknown, record) => (
         <Space size="small">
+          <Perm permission={PERMISSIONS.ORDER.UPDATE}>
+            <Tooltip title="权益调整 (冻结 / 解冻 / 延期)">
+              <Button
+                type="link"
+                size="small"
+                icon={<ClockCircleOutlined />}
+                onClick={() => {
+                  setBenefitModalOrder(record);
+                  setBenefitModalOpen(true);
+                }}
+              />
+            </Tooltip>
+          </Perm>
           <Perm permission={PERMISSIONS.ORDER.UPDATE}>
             <Tooltip title="编辑订单">
               <Button
@@ -709,6 +742,16 @@ export function OrderManagement() {
           </Row>
         </Form>
       </Modal>
+
+      <OrderBenefitModal
+        order={benefitModalOrder}
+        open={benefitModalOpen}
+        onClose={() => {
+          setBenefitModalOpen(false);
+          setBenefitModalOrder(null);
+          refetch();
+        }}
+      />
     </div>
   );
 }
