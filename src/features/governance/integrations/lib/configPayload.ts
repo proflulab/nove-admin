@@ -5,6 +5,7 @@ import type {
   StorageConfig,
   TencentMeetingConfig,
   WechatShopConfig,
+  WecomConfig,
 } from '../types';
 
 /**
@@ -32,6 +33,10 @@ export function buildMailConfigPayload(values: MailConfig): MailConfig {
 
 export function buildWechatShopConfigPayload(values: WechatShopConfig): WechatShopConfig {
   return omitEmptySecrets(values, ['appSecret', 'webhookToken', 'encodingAesKey']);
+}
+
+export function buildWecomConfigPayload(values: WecomConfig): WecomConfig {
+  return omitEmptySecrets(values, ['corpSecret', 'webhookToken', 'encodingAesKey']);
 }
 
 export function buildAiConfigPayload(values: AiConfig): AiConfig {

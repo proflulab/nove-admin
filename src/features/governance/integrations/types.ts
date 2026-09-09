@@ -4,6 +4,7 @@ export type IntegrationModule =
   | 'tencent-meeting'
   | 'lark'
   | 'wechat-shop'
+  | 'wecom'
   | 'storage'
   | 'drive'
   | 'file-scanning';
@@ -72,6 +73,14 @@ export interface WechatShopConfig {
   apiBaseUrl?: string;
 }
 
+export interface WecomConfig {
+  corpId?: string;
+  corpSecret?: string;
+  webhookToken?: string;
+  encodingAesKey?: string;
+  apiBaseUrl?: string;
+}
+
 export interface DriveConfig {
   downloadUrlExpiresSeconds?: number;
   recycleRetentionDays?: number;
@@ -109,6 +118,7 @@ export type IntegrationConfigMap = {
   'tencent-meeting': TencentMeetingConfig;
   lark: LarkConfig;
   'wechat-shop': WechatShopConfig;
+  wecom: WecomConfig;
   storage: StorageConfig;
   drive: DriveConfig;
   'file-scanning': FileScanningConfig;
