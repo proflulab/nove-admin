@@ -468,15 +468,15 @@ export function IntegrationsManagement() {
     {
       type: 'group' as const,
       label: '会议集成',
-      children: [
-        menuItem('tencent-meeting', summaryMap.get('tencent-meeting')),
-        menuItem('lark', summaryMap.get('lark')),
-      ],
+      children: [menuItem('tencent-meeting', summaryMap.get('tencent-meeting'))],
     },
     {
       type: 'group' as const,
       label: '通讯与协同',
-      children: [menuItem('wecom', summaryMap.get('wecom'))],
+      children: [
+        menuItem('wecom', summaryMap.get('wecom')),
+        menuItem('lark', summaryMap.get('lark')),
+      ],
     },
     {
       type: 'group' as const,
