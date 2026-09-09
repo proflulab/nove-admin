@@ -476,10 +476,12 @@ export function IntegrationsManagement() {
     {
       type: 'group' as const,
       label: '通讯与协同',
-      children: [
-        menuItem('wecom', summaryMap.get('wecom')),
-        menuItem('wechat-shop', summaryMap.get('wechat-shop')),
-      ],
+      children: [menuItem('wecom', summaryMap.get('wecom'))],
+    },
+    {
+      type: 'group' as const,
+      label: '交易集成',
+      children: [menuItem('wechat-shop', summaryMap.get('wechat-shop'))],
     },
     {
       type: 'group' as const,

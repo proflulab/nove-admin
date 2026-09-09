@@ -167,6 +167,7 @@ describe('IntegrationsManagement', () => {
     expect(screen.getByText('AI 能力')).toBeInTheDocument();
     expect(screen.getByText('会议集成')).toBeInTheDocument();
     expect(screen.getByText('通讯与协同')).toBeInTheDocument();
+    expect(screen.getByText('交易集成')).toBeInTheDocument();
     expect(screen.getByLabelText('只读配置详情')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /编辑配置/ })).toBeInTheDocument();
