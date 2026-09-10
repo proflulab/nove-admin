@@ -74,6 +74,7 @@ interface OrderFormValues {
   paidAt?: Dayjs;
   cancelledAt?: Dayjs;
   completedAt?: Dayjs;
+  durationDays?: number;
   benefitStart?: Dayjs;
   benefitEnd?: Dayjs;
   paymentProvider?: PaymentProvider;
@@ -156,6 +157,7 @@ function buildPayload(values: OrderFormValues): CreateOrder {
     paidAt: toIso(values.paidAt),
     cancelledAt: toIso(values.cancelledAt),
     completedAt: toIso(values.completedAt),
+    durationDays: values.durationDays !== undefined ? values.durationDays : undefined,
     benefitStart: toIso(values.benefitStart),
     benefitEnd: toIso(values.benefitEnd),
     paymentProvider: values.paymentProvider,
@@ -283,6 +285,7 @@ export function OrderManagement() {
       paidAt: undefined,
       cancelledAt: undefined,
       completedAt: undefined,
+      durationDays: undefined,
       benefitStart: undefined,
       benefitEnd: undefined,
       paymentProvider: undefined,
@@ -315,6 +318,7 @@ export function OrderManagement() {
       paidAt: toDayjs(record.paidAt),
       cancelledAt: toDayjs(record.cancelledAt),
       completedAt: toDayjs(record.completedAt),
+      durationDays: record.durationDays ?? undefined,
       benefitStart: toDayjs(record.benefitStart),
       benefitEnd: toDayjs(record.benefitEnd),
       paymentProvider: record.paymentProvider ?? undefined,
@@ -440,14 +444,19 @@ export function OrderManagement() {
       render: (_: unknown, record) => record.channel?.name || record.channelId || '-',
     },
     {
-      title: '权益结束',
+      title: '权益周期',
       dataIndex: 'benefitEnd',
       key: 'benefitEnd',
       width: 200,
       render: (value: string | null, record) => (
         <Space direction="vertical" size={2}>
           <span>{formatDateTime(value)}</span>
-          <Space size={4}>
+          <Space size={4} wrap>
+            {record.durationDays ? (
+              <Tag color="blue" style={{ margin: 0 }}>
+                {record.durationDays} 天
+              </Tag>
+            ) : null}
             {record.status === 'FROZEN' && (
               <Tag color="cyan" style={{ margin: 0 }}>
                 已冻结
@@ -729,14 +738,19 @@ export function OrderManagement() {
                 <DatePicker showTime style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="durationDays" label="权益时长（天）">
+                <InputNumber min={1} max={3650} addonAfter="天" placeholder="留空默认继承商品" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="benefitStart" label="权益开始">
                 <DatePicker showTime style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="benefitEnd" label="权益结束">
-                <DatePicker showTime style={{ width: '100%' }} />
+                <DatePicker showTime placeholder="留空自动推算" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>

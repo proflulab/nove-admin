@@ -91,6 +91,7 @@ export interface Order {
   paidAt: string | null;
   cancelledAt: string | null;
   completedAt: string | null;
+  durationDays: number | null;
   benefitStart: string | null;
   benefitEnd: string | null;
   frozenDays: number;
@@ -128,6 +129,7 @@ export interface CreateOrder {
   paidAt?: string;
   cancelledAt?: string;
   completedAt?: string;
+  durationDays?: number;
   benefitStart?: string;
   benefitEnd?: string;
   paymentProvider?: PaymentProvider;
