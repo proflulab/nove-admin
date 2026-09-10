@@ -12,7 +12,7 @@ export type Currency =
   | 'AUD'
   | 'CAD';
 
-export type OrderStatus = 'UNPAID' | 'PAID' | 'CANCELLED' | 'COMPLETED';
+export type OrderStatus = 'UNPAID' | 'PAID' | 'FROZEN' | 'CANCELLED' | 'COMPLETED';
 
 export type PaymentProvider =
   | 'STRIPE'
@@ -93,6 +93,8 @@ export interface Order {
   completedAt: string | null;
   benefitStart: string | null;
   benefitEnd: string | null;
+  frozenDays: number;
+  frozenAt: string | null;
   paymentProvider: PaymentProvider | null;
   providerTradeNo: string | null;
   product: OrderRelation | null;
@@ -156,4 +158,34 @@ export interface OrderListData {
   page: number;
   pageSize: number;
   totalPages: number;
+}
+
+export type BenefitAdjustmentType = 'FREEZE' | 'UNFREEZE' | 'EXTENSION';
+
+export interface OrderBenefitAdjustment {
+  id: string;
+  orderId: string;
+  type: BenefitAdjustmentType;
+  days: number;
+  freezeStart: string | null;
+  freezeEnd: string | null;
+  beforeEnd: string;
+  afterEnd: string;
+  reason: string | null;
+  operatorId: string | null;
+  operator?: OrderRelation | null;
+  createdAt: string;
+}
+
+export interface FreezeOrderPayload {
+  reason?: string;
+}
+
+export interface UnfreezeOrderPayload {
+  reason?: string;
+}
+
+export interface ExtendOrderPayload {
+  days: number;
+  reason?: string;
 }

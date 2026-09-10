@@ -86,3 +86,14 @@ export interface OrderRefundListData {
   pageSize: number;
   totalPages: number;
 }
+
+export interface BenefitCalculationPreview {
+  benefitStart: string | null;
+  applyAt: string;
+  naturalDays: number;
+  totalFrozenDays: number;
+  isCurrentlyFrozen: boolean;
+  effectiveUsedDays: number;
+  remainingDays: number;
+  suggestedRefundAmount: number;
+}
