@@ -178,13 +178,16 @@ export function OrderBenefitModal({ order, open, onClose }: OrderBenefitModalPro
               <Tag>{order.status}</Tag>
             )}
           </Descriptions.Item>
+          <Descriptions.Item label="购买权益时长">
+            <Text strong>{order.durationDays ? `${order.durationDays} 天` : '未设置/永久'}</Text>
+          </Descriptions.Item>
           <Descriptions.Item label="累计冻结天数">
             <Text strong>{order.frozenDays || 0} 天</Text>
           </Descriptions.Item>
           <Descriptions.Item label="权益开始时间">
             {formatDateTime(order.benefitStart)}
           </Descriptions.Item>
-          <Descriptions.Item label="权益结束时间">
+          <Descriptions.Item label="权益结束时间" span={2}>
             <Text strong style={{ color: '#0958d9' }}>
               {formatDateTime(order.benefitEnd)}
             </Text>
