@@ -1,4 +1,5 @@
-import Avatar from 'antd/es/avatar';
+import { useAuth } from '../../../../shared/hooks/useAuth';
+import { DriveMediaPicker, ProjectCoverAvatar } from '../../../drive/components/DriveMediaPicker';
 import Button from 'antd/es/button';
 import Col from 'antd/es/col';
 import DatePicker from 'antd/es/date-picker';
@@ -20,7 +21,6 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import {
-  AppstoreOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
@@ -143,6 +143,7 @@ function buildPayload(values: ProductFormValues): CreateProduct {
 }
 
 export function ProductManagement() {
+  const { user } = useAuth();
   const [filters, setFilters] = useState<TableQueryParams>({
     page: 1,
     pageSize: 10,
@@ -299,12 +300,7 @@ export function ProductManagement() {
       sorter: true,
       render: (_value, record) => (
         <Space align="start">
-          <Avatar
-            shape="square"
-            size={52}
-            src={record.imageUrl}
-            icon={!record.imageUrl ? <AppstoreOutlined /> : undefined}
-          />
+          <ProjectCoverAvatar reference={record.imageUrl} />
           <Space orientation="vertical" size={1}>
             <span style={{ fontWeight: 600 }}>{record.name}</span>
             <span style={{ color: '#64748b', fontFamily: 'monospace', fontSize: 12 }}>
@@ -643,9 +639,26 @@ export function ProductManagement() {
                 <TextArea rows={4} maxLength={3000} showCount />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item name="imageUrl" label="产品图片">
+                <DriveMediaPicker
+                  orgId={user?.currentOrgId ?? ''}
+                  label="产品图片"
+                  entityLabel="产品"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="videoUrl" label="产品视频">
+                <DriveMediaPicker
+                  orgId={user?.currentOrgId ?? ''}
+                  label="产品视频"
+                  entityLabel="产品"
+                  mediaType="video"
+                />
+              </Form.Item>
+            </Col>
             {[
-              ['imageUrl', '产品图片 URL'],
-              ['videoUrl', '产品视频 URL'],
               ['downloadUrl', '下载链接'],
               ['externalUrl', '外部链接'],
             ].map(([name, label]) => (

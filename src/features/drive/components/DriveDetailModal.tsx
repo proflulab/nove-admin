@@ -122,6 +122,7 @@ const AUDIT_ACTION_MAP: Record<string, ActionMeta> = {
 };
 
 const BINDING_TARGET_MAP: Record<string, string> = {
+  PRODUCT: '产品',
   MINUTE: '会议纪要',
   MEETING: '会议实体',
   ORGANIZATION: '企业组织',
@@ -135,6 +136,8 @@ const BINDING_PURPOSE_MAP: Record<string, string> = {
   SUMMARY: '会议纪要报告',
   AVATAR: '头像素材',
   COVER: '项目封面',
+  PRODUCT_IMAGE: '产品图片',
+  PRODUCT_VIDEO: '产品视频',
 };
 
 export function DriveDetailModal({
