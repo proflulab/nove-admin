@@ -1,10 +1,12 @@
 import {
   CheckCircleOutlined,
+  CreditCardOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import Alert from 'antd/es/alert';
 import Button from 'antd/es/button';
@@ -36,6 +38,8 @@ import {
 import { PERMISSIONS } from '../../../../shared/utils/permissions';
 import { orderRefundApi } from '../api/orderRefundApi';
 import { RefundOrderSelect } from '../components/RefundOrderSelect';
+import { StripeRefundSyncModal } from '../components/StripeRefundSyncModal';
+import { stripeRefundSyncApi } from '../api/stripeRefundSyncApi';
 import type {
   BenefitCalculationPreview,
   CreateOrderRefund,
@@ -114,6 +118,12 @@ function formatAmount(record: OrderRefund) {
   })}`;
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  const responseMessage = (error as { response?: { data?: { message?: string | string[] } } })
+    ?.response?.data?.message;
+  return Array.isArray(responseMessage) ? responseMessage.join('；') : responseMessage || fallback;
+}
+
 export function OrderRefundManagement() {
   const [filters, setFilters] = useState<TableQueryParams>({
     page: 1,
@@ -127,6 +137,8 @@ export function OrderRefundManagement() {
     null
   );
   const [isCalculating, setIsCalculating] = useState(false);
+  const [stripeSyncOpen, setStripeSyncOpen] = useState(false);
+  const [resyncingCode, setResyncingCode] = useState<string | null>(null);
   const [form] = Form.useForm<RefundFormValues>();
 
   const { data, isLoading, isFetching, refetch } = useTableQuery<OrderRefund>({
@@ -194,9 +206,22 @@ export function OrderRefundManagement() {
   const deleteMutation = useTableDeleteMutation({
     queryKey: 'order-refunds',
     mutationFn: orderRefundApi.delete,
-    onSuccess: () => message.success('退款售后已删除'),
-    onError: () => message.error('删除退款售后失败'),
+    onSuccess: () => message.success('删除成功'),
+    onError: () => message.error('删除失败'),
   });
+
+  const handleStripeResync = async (afterSaleCode: string) => {
+    setResyncingCode(afterSaleCode);
+    try {
+      await stripeRefundSyncApi.syncSingle(afterSaleCode);
+      message.success(`Stripe 退款单 (${afterSaleCode}) 已同步最新状态`);
+      refetch();
+    } catch (error) {
+      message.error(getErrorMessage(error, 'Stripe 退款同步失败'));
+    } finally {
+      setResyncingCode(null);
+    }
+  };
 
   const changeFilter = (key: string, value: unknown) => {
     setFilters((current) => ({ ...current, [key]: value || undefined, page: 1 }));
@@ -348,6 +373,17 @@ export function OrderRefundManagement() {
               </Popconfirm>
             </Tooltip>
           </Perm>
+          {record.refundChannel === 'STRIPE' && record.afterSaleCode && (
+            <Tooltip title="从 Stripe 重新拉取最新状态">
+              <Button
+                type="link"
+                size="small"
+                icon={<SyncOutlined spin={resyncingCode === record.afterSaleCode} />}
+                onClick={() => void handleStripeResync(record.afterSaleCode)}
+                disabled={resyncingCode === record.afterSaleCode}
+              />
+            </Tooltip>
+          )}
           <Perm permission={PERMISSIONS.ORDER_REFUND.UPDATE}>
             <Tooltip title="编辑">
               <Button
@@ -426,6 +462,11 @@ export function OrderRefundManagement() {
         <Perm permission={PERMISSIONS.ORDER_REFUND.CREATE}>
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             登记退款
+          </Button>
+        </Perm>
+        <Perm permission={PERMISSIONS.ORDER_REFUND.CREATE}>
+          <Button icon={<CreditCardOutlined />} onClick={() => setStripeSyncOpen(true)}>
+            同步 Stripe 退款
           </Button>
         </Perm>
         <Button icon={<ReloadOutlined />} loading={isFetching} onClick={() => refetch()}>
@@ -623,6 +664,12 @@ export function OrderRefundManagement() {
           </Row>
         </Form>
       </Modal>
+
+      <StripeRefundSyncModal
+        open={stripeSyncOpen}
+        onCancel={() => setStripeSyncOpen(false)}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }

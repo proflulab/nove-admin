@@ -7,7 +7,8 @@ export type IntegrationModule =
   | 'wecom'
   | 'storage'
   | 'drive'
-  | 'file-scanning';
+  | 'file-scanning'
+  | 'stripe';
 
 export type IntegrationSource = 'database' | 'default';
 
@@ -112,6 +113,13 @@ export interface StorageConfig {
   signedUrlExpiresSeconds?: number;
 }
 
+export interface StripeConfig {
+  secretKey?: string;
+  publishableKey?: string;
+  webhookSecret?: string;
+  currency?: string;
+}
+
 export type IntegrationConfigMap = {
   mail: MailConfig;
   ai: AiConfig;
@@ -122,6 +130,7 @@ export type IntegrationConfigMap = {
   storage: StorageConfig;
   drive: DriveConfig;
   'file-scanning': FileScanningConfig;
+  stripe: StripeConfig;
 };
 
 export interface SaveIntegrationResult {

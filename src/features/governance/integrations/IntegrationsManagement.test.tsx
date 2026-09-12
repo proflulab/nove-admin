@@ -56,6 +56,7 @@ describe('IntegrationsManagement', () => {
         'storage',
         'drive',
         'file-scanning',
+        'stripe',
       ].map((module) => ({
         orgId: 'org-1',
         module,
@@ -151,6 +152,12 @@ describe('IntegrationsManagement', () => {
             scanPollIntervalMs: 3000,
             clamAvPort: 3310,
             clamAvTimeoutMs: 600000,
+          },
+          stripe: {
+            secretKey: '********',
+            publishableKey: 'pk_test_123',
+            webhookSecret: '********',
+            currency: 'USD',
           },
         }[module],
       })

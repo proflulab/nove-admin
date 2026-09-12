@@ -19,11 +19,13 @@ import type { Dayjs } from 'dayjs';
 import { useMemo, useState } from 'react';
 import {
   ClockCircleOutlined,
+  CreditCardOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { Perm } from '../../../../app/guards/Perm';
 import {
@@ -38,6 +40,8 @@ import { OrderBenefitModal } from '../components/OrderBenefitModal';
 import { OrderChannelSelect } from '../components/OrderChannelSelect';
 import { OrderProductSelect } from '../components/OrderProductSelect';
 import { ORDER_STATUS_OPTIONS } from '../components/orderStatusOptions';
+import { StripeOrderSyncModal } from '../components/StripeOrderSyncModal';
+import { stripeOrderSyncApi } from '../api/stripeOrderSyncApi';
 import { OrderUserSelect } from '../components/OrderUserSelect';
 import type {
   CreateOrder,
@@ -50,6 +54,12 @@ import type {
 
 const { Search } = Input;
 const { RangePicker } = DatePicker;
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  const responseMessage = (error as { response?: { data?: { message?: string | string[] } } })
+    ?.response?.data?.message;
+  return Array.isArray(responseMessage) ? responseMessage.join('；') : responseMessage || fallback;
+}
 
 type OrderFormMode = 'create' | 'edit';
 
@@ -181,6 +191,8 @@ export function OrderManagement() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [benefitModalOpen, setBenefitModalOpen] = useState(false);
   const [benefitModalOrder, setBenefitModalOrder] = useState<Order | null>(null);
+  const [stripeSyncOpen, setStripeSyncOpen] = useState(false);
+  const [resyncingId, setResyncingId] = useState<string | null>(null);
   const [form] = Form.useForm<OrderFormValues>();
 
   const {
@@ -259,6 +271,19 @@ export function OrderManagement() {
       paidTo: dates?.[1]?.endOf('day').toISOString(),
       page: 1,
     }));
+  };
+
+  const handleStripeResync = async (externalId: string) => {
+    setResyncingId(externalId);
+    try {
+      await stripeOrderSyncApi.syncSingle(externalId);
+      message.success(`Stripe 订单 (${externalId}) 已同步最新状态`);
+      refetch();
+    } catch (error) {
+      message.error(getErrorMessage(error, 'Stripe 同步失败'));
+    } finally {
+      setResyncingId(null);
+    }
   };
 
   const handleCreate = () => {
@@ -499,6 +524,17 @@ export function OrderManagement() {
               />
             </Tooltip>
           </Perm>
+          {record.paymentProvider === 'STRIPE' && record.externalId && (
+            <Tooltip title="从 Stripe 重新拉取最新状态">
+              <Button
+                type="link"
+                size="small"
+                icon={<SyncOutlined spin={resyncingId === record.externalId} />}
+                onClick={() => void handleStripeResync(record.externalId!)}
+                disabled={resyncingId === record.externalId}
+              />
+            </Tooltip>
+          )}
           <Perm permission={PERMISSIONS.ORDER.UPDATE}>
             <Tooltip title="编辑订单">
               <Button
@@ -579,6 +615,11 @@ export function OrderManagement() {
         <Perm permission={PERMISSIONS.ORDER.CREATE}>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
             新增订单
+          </Button>
+        </Perm>
+        <Perm permission={PERMISSIONS.ORDER.CREATE}>
+          <Button icon={<CreditCardOutlined />} onClick={() => setStripeSyncOpen(true)}>
+            同步 Stripe 订单
           </Button>
         </Perm>
         <Button icon={<ReloadOutlined />} onClick={() => refetch()} loading={isFetching}>
@@ -740,7 +781,13 @@ export function OrderManagement() {
             </Col>
             <Col span={8}>
               <Form.Item name="durationDays" label="权益时长（天）">
-                <InputNumber min={1} max={3650} addonAfter="天" placeholder="留空默认继承商品" style={{ width: '100%' }} />
+                <InputNumber
+                  min={1}
+                  max={3650}
+                  addonAfter="天"
+                  placeholder="留空默认继承商品"
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -765,6 +812,12 @@ export function OrderManagement() {
           setBenefitModalOrder(null);
           refetch();
         }}
+      />
+
+      <StripeOrderSyncModal
+        open={stripeSyncOpen}
+        onCancel={() => setStripeSyncOpen(false)}
+        onSuccess={() => refetch()}
       />
     </div>
   );

@@ -218,6 +218,23 @@ const READONLY_SECTIONS: Record<IntegrationModule, ReadonlySection[]> = {
       ],
     },
   ],
+  stripe: [
+    {
+      title: 'API 凭证',
+      fields: [
+        { key: 'secretKey', label: 'Secret Key', kind: 'secret', fullWidth: true },
+        { key: 'publishableKey', label: 'Publishable Key', fullWidth: true },
+      ],
+    },
+    {
+      title: 'Webhook 签名',
+      fields: [{ key: 'webhookSecret', label: 'Webhook Secret', kind: 'secret', fullWidth: true }],
+    },
+    {
+      title: '交易默认设置',
+      fields: [{ key: 'currency', label: '默认币种', fullWidth: true }],
+    },
+  ],
 };
 
 function hasValue(value: unknown): boolean {
