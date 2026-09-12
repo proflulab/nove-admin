@@ -1,4 +1,5 @@
 import {
+  roleControllerDeleteRoleBinding,
   roleControllerCreate,
   roleControllerCreateRoleBinding,
   roleControllerDelete,
@@ -49,6 +50,10 @@ export const roleManagementApi = {
 
   delete(roleId: string): Promise<void> {
     return roleControllerDelete(roleId);
+  },
+
+  unbindMember(orgId: string, bindingId: string) {
+    return roleControllerDeleteRoleBinding(orgId, bindingId);
   },
 
   bindMember(orgId: string, data: CreateRoleBinding) {

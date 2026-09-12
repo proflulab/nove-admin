@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 import { RoleManagement } from './RoleManagement';
 
 const apiMocks = vi.hoisted(() => ({
+  unbindMember: vi.fn(),
   listRoles: vi.fn(),
   roleOptions: vi.fn(),
   permissionTree: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('../../../shared/hooks/useAuth', () => ({
 
 vi.mock('./api/roleManagementApi', () => ({
   roleManagementApi: {
+    unbindMember: apiMocks.unbindMember,
     list: apiMocks.listRoles,
     create: vi.fn(),
     update: vi.fn(),
@@ -64,8 +66,8 @@ describe('RoleManagement', () => {
       data: [
         {
           id: 'role-1',
-          name: '超级管理员',
-          code: 'SUPER_ADMIN',
+          name: '管理员',
+          code: 'ADMIN',
           type: 'SYSTEM',
           level: 1,
           active: true,
@@ -89,6 +91,10 @@ describe('RoleManagement', () => {
           avatar: null,
           departmentNames: ['班主任'],
           roleIds: ['role-1'],
+          roleBindings: [
+            { id: 'binding-1', roleId: 'role-1' },
+            { id: 'other-binding', roleId: 'other-role' },
+          ],
         },
       ],
       total: 1,
@@ -97,6 +103,65 @@ describe('RoleManagement', () => {
       totalPages: 1,
     });
     apiMocks.permissionTree.mockResolvedValue([]);
+  });
+
+  it.each(['single', 'batch'])(
+    'removes only the selected role binding after confirmation (%s)',
+    async (mode) => {
+      apiMocks.unbindMember.mockResolvedValue(undefined);
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RoleManagement />
+        </QueryClientProvider>
+      );
+      await screen.findByText('杨仕明');
+      if (mode === 'single') fireEvent.click(screen.getByRole('button', { name: '移除' }));
+      else {
+        expect(screen.getByRole('button', { name: '移除成员' })).toBeDisabled();
+        fireEvent.click(screen.getAllByRole('checkbox')[1]);
+        fireEvent.click(screen.getByRole('button', { name: /移除成员/ }));
+      }
+      expect(apiMocks.unbindMember).not.toHaveBeenCalled();
+      expect(await screen.findByText('成员仍保留在组织中，其他角色不受影响。')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: '确认移除' }));
+      await waitFor(() => expect(apiMocks.unbindMember).toHaveBeenCalledWith('org-1', 'binding-1'));
+      expect(apiMocks.unbindMember).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(apiMocks.roleOptions.mock.calls.length).toBeGreaterThan(1));
+    }
+  );
+
+  it('refreshes members and reports failures when unbinding fails', async () => {
+    apiMocks.unbindMember.mockRejectedValue(new Error('Forbidden'));
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RoleManagement />
+      </QueryClientProvider>
+    );
+    await screen.findByText('杨仕明');
+    fireEvent.click(screen.getByRole('button', { name: '移除' }));
+    fireEvent.click(await screen.findByRole('button', { name: '确认移除' }));
+    expect(await screen.findByText('有 1 条角色绑定移除失败，请刷新后重试')).toBeInTheDocument();
+    await waitFor(() => expect(apiMocks.roleOptions.mock.calls.length).toBeGreaterThan(1));
+  });
+
+  it('disables removal and selection for super administrators', async () => {
+    const roles = await apiMocks.listRoles();
+    roles.data[0].code = 'SUPER_ADMIN';
+    roles.data[0].name = '超级管理员';
+    apiMocks.listRoles.mockResolvedValue(roles);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RoleManagement />
+      </QueryClientProvider>
+    );
+    await screen.findByText('杨仕明');
+    expect(screen.getByRole('button', { name: '移除' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '移除成员' })).toBeDisabled();
+    for (const checkbox of screen.getAllByRole('checkbox')) expect(checkbox).toBeDisabled();
+    expect(apiMocks.unbindMember).not.toHaveBeenCalled();
   });
 
   it('applies ellipsis only to the member name and not the avatar text', async () => {
