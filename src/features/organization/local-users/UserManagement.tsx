@@ -2,6 +2,7 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
+  FileProtectOutlined,
   PlusOutlined,
   ReloadOutlined,
   SearchOutlined,
@@ -41,6 +42,7 @@ import {
 } from './lib/userForm';
 import { getUserIdentityDisplay } from './lib/userDisplay';
 import { COUNTRY_OPTIONS } from './lib/countryOptions';
+import { IdentityDocumentManager } from './IdentityDocumentManager';
 import type { AdminUser, UserImportResponse, UserListParams, UserWritePayload } from './types';
 import './UserManagement.css';
 
@@ -63,6 +65,7 @@ export function UserManagement() {
   const [importOpen, setImportOpen] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [importResult, setImportResult] = useState<UserImportResponse | null>(null);
+  const [identityUser, setIdentityUser] = useState<AdminUser | null>(null);
   const [form] = Form.useForm<UserWritePayload>();
 
   const usersQuery = useQuery({
@@ -229,9 +232,17 @@ export function UserManagement() {
       title: '操作',
       key: 'actions',
       fixed: 'right',
-      width: 105,
+      width: 145,
       render: (_value, record) => (
         <Space size={4}>
+          <Perm permission={PERMISSIONS.IDENTITY_DOCUMENT.READ}>
+            <Button
+              type="text"
+              icon={<FileProtectOutlined />}
+              title="身份凭证"
+              onClick={() => setIdentityUser(record)}
+            />
+          </Perm>
           <Perm permission={PERMISSIONS.USER.UPDATE}>
             <Button type="text" icon={<EditOutlined />} onClick={() => openEdit(record)} />
           </Perm>
@@ -500,6 +511,12 @@ export function UserManagement() {
           </div>
         )}
       </Modal>
+
+      <IdentityDocumentManager
+        open={Boolean(identityUser)}
+        user={identityUser}
+        onClose={() => setIdentityUser(null)}
+      />
     </div>
   );
 }

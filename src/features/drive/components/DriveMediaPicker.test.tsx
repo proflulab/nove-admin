@@ -20,7 +20,7 @@ vi.mock('../api/driveApi', () => ({
   },
 }));
 
-function renderPicker(onChange = vi.fn(), mediaType: 'image' | 'video' = 'image') {
+function renderPicker(onChange = vi.fn(), mediaType: 'image' | 'video' | 'document' = 'image') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
@@ -28,8 +28,8 @@ function renderPicker(onChange = vi.fn(), mediaType: 'image' | 'video' = 'image'
         orgId="org-1"
         onChange={onChange}
         mediaType={mediaType}
-        label={mediaType === 'image' ? '产品图片' : '产品视频'}
-        entityLabel="产品"
+        label={mediaType === 'image' ? '产品图片' : mediaType === 'video' ? '产品视频' : '身份凭证'}
+        entityLabel={mediaType === 'document' ? '身份凭证' : '产品'}
       />
     </QueryClientProvider>
   );
@@ -100,6 +100,39 @@ describe('Product media picker', () => {
     expect(screen.queryByText('cover.png')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '选择' }));
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('drive://file/video-file'));
+  });
+  it('allows image and PDF evidence files for identity documents', async () => {
+    mocks.listNodes.mockResolvedValue({
+      items: [
+        {
+          id: 'image-node',
+          type: 'FILE',
+          fileId: 'image-file',
+          name: 'front.png',
+          contentType: 'image/png',
+        },
+        {
+          id: 'pdf-node',
+          type: 'FILE',
+          fileId: 'pdf-file',
+          name: 'passport.pdf',
+          contentType: 'application/pdf',
+        },
+        {
+          id: 'video-node',
+          type: 'FILE',
+          fileId: 'video-file',
+          name: 'clip.mp4',
+          contentType: 'video/mp4',
+        },
+      ],
+      nextCursor: null,
+    });
+    renderPicker(vi.fn(), 'document');
+    fireEvent.click(screen.getByRole('button', { name: /从云盘选择/ }));
+    expect(await screen.findByText('front.png')).toBeInTheDocument();
+    expect(screen.getByText('passport.pdf')).toBeInTheDocument();
+    expect(screen.queryByText('clip.mp4')).not.toBeInTheDocument();
   });
   it.each(['image', 'video'] as const)(
     'uploads %s into the matching product folder',
