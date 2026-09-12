@@ -17,7 +17,7 @@ describe('application routes', () => {
     {
       path: '/governance',
       title: '平台治理',
-      childPaths: ['/permissions', '/api-keys', '/oauth-clients', '/settings/system-config'],
+      childPaths: ['/permissions', '/api-keys', '/oauth-clients', '/settings/integrations'],
     },
     {
       path: '/settings',

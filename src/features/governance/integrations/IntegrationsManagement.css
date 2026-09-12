@@ -1,11 +1,11 @@
-.system-config-page {
+.integrations-page {
   display: grid;
   width: 100%;
   grid-template-columns: 224px minmax(0, 1fr);
   gap: 20px;
 }
 
-.system-config-sidebar {
+.integrations-sidebar {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -19,66 +19,66 @@
   background: #fff;
 }
 
-.system-config-sidebar .ant-menu {
+.integrations-sidebar .ant-menu {
   border-inline-end: 0;
 }
 
-.system-config-menu-label {
+.integrations-menu-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.system-config-menu-label > span:last-child {
+.integrations-menu-label > span:last-child {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #c9cdd4;
 }
 
-.system-config-menu-label > span.is-configured {
+.integrations-menu-label > span.is-configured {
   background: #00b42a;
 }
 
-.system-config-content {
+.integrations-content {
   min-width: 0;
 }
 
-.system-config-card {
+.integrations-card {
   overflow: hidden;
   border-color: #e5e6eb;
   border-radius: 10px;
 }
 
-.system-config-card .ant-card-head {
+.integrations-card .ant-card-head {
   min-height: 72px;
   padding: 0 24px;
 }
 
-.system-config-card .ant-card-body {
+.integrations-card .ant-card-body {
   padding: 24px;
 }
 
-.system-config-card-heading {
+.integrations-card-heading {
   display: flex;
   flex-direction: column;
   gap: 3px;
   padding: 14px 0;
 }
 
-.system-config-card-heading > span:first-child {
+.integrations-card-heading > span:first-child {
   color: #1f2329;
   font-size: 16px;
   font-weight: 600;
 }
 
-.system-config-card-title-line {
+.integrations-card-title-line {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.system-config-help-button.ant-btn {
+.integrations-help-button.ant-btn {
   width: 24px;
   min-width: 24px;
   height: 24px;
@@ -87,13 +87,13 @@
   font-size: 14px;
 }
 
-.system-config-help-button.ant-btn:hover,
-.system-config-help-button.ant-btn:focus-visible {
+.integrations-help-button.ant-btn:hover,
+.integrations-help-button.ant-btn:focus-visible {
   background: #f0f5ff;
   color: #1677ff;
 }
 
-.system-config-secret-help {
+.integrations-secret-help {
   width: min(320px, calc(100vw - 48px));
   color: #646a73;
   font-size: 13px;
@@ -101,19 +101,19 @@
   line-height: 1.65;
 }
 
-.system-config-help-section + .system-config-help-section {
+.integrations-help-section + .integrations-help-section {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e5e6eb;
 }
 
-.system-config-help-section-title {
+.integrations-help-section-title {
   margin-bottom: 3px;
   color: #1f2329;
   font-weight: 500;
 }
 
-.system-config-secret-help code {
+.integrations-secret-help code {
   padding: 1px 4px;
   border-radius: 4px;
   background: #f2f3f5;
@@ -121,23 +121,23 @@
   font-family: inherit;
 }
 
-.system-config-card-heading > span:last-child {
+.integrations-card-heading > span:last-child {
   color: #8f959e;
   font-size: 13px;
   font-weight: 400;
 }
 
-.system-config-test-result {
+.integrations-test-result {
   margin-bottom: 20px;
 }
 
-.system-config-readonly {
+.integrations-readonly {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
-.system-config-readonly-section h3 {
+.integrations-readonly-section h3 {
   margin: 0 0 14px;
   padding-bottom: 10px;
   border-bottom: 1px solid #f0f0f0;
@@ -147,31 +147,31 @@
   line-height: 1.5;
 }
 
-.system-config-readonly-grid {
+.integrations-readonly-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0 32px;
   margin: 0;
 }
 
-.system-config-readonly-item {
+.integrations-readonly-item {
   min-width: 0;
   padding: 12px 0 16px;
   border-bottom: 1px solid #f5f5f5;
 }
 
-.system-config-readonly-item.is-full-width {
+.integrations-readonly-item.is-full-width {
   grid-column: 1 / -1;
 }
 
-.system-config-readonly-item dt {
+.integrations-readonly-item dt {
   margin-bottom: 6px;
   color: #8f959e;
   font-size: 13px;
   line-height: 1.5;
 }
 
-.system-config-readonly-item dd {
+.integrations-readonly-item dd {
   margin: 0;
   overflow-wrap: anywhere;
   color: #1f2329;
@@ -180,17 +180,17 @@
   white-space: pre-wrap;
 }
 
-.system-config-readonly-empty {
+.integrations-readonly-empty {
   color: #b1b5bc;
 }
 
-.system-config-readonly-color {
+.integrations-readonly-color {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.system-config-readonly-swatch {
+.integrations-readonly-swatch {
   width: 16px;
   height: 16px;
   flex: none;
@@ -198,23 +198,23 @@
   border-radius: 4px;
 }
 
-.system-config-form .ant-form-item {
+.integrations-form .ant-form-item {
   margin-bottom: 20px;
 }
 
-.system-config-form > .ant-divider-with-text-start .ant-divider-rail-start {
+.integrations-form > .ant-divider-with-text-start .ant-divider-rail-start {
   width: 0;
 }
 
-.system-config-form > .ant-divider-with-text-start .ant-divider-rail-end {
+.integrations-form > .ant-divider-with-text-start .ant-divider-rail-end {
   width: 100%;
 }
 
-.system-config-form > .ant-divider-with-text-start .ant-divider-inner-text {
+.integrations-form > .ant-divider-with-text-start .ant-divider-inner-text {
   padding-inline-start: 0;
 }
 
-.system-config-switch-row {
+.integrations-switch-row {
   display: flex;
   min-height: 64px;
   align-items: center;
@@ -226,22 +226,22 @@
   background: #fafbfc;
 }
 
-.system-config-switch-title {
+.integrations-switch-title {
   color: #1f2329;
   font-weight: 500;
 }
 
-.system-config-switch-description {
+.integrations-switch-description {
   margin-top: 3px;
   color: #8f959e;
   font-size: 12px;
 }
 
-.system-config-divider {
+.integrations-divider {
   margin: 24px 0 20px;
 }
 
-.system-config-actions {
+.integrations-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -249,32 +249,32 @@
 }
 
 @media (max-width: 720px) {
-  .system-config-page {
+  .integrations-page {
     grid-template-columns: 1fr;
   }
 
-  .system-config-sidebar {
+  .integrations-sidebar {
     position: static;
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
   }
 
-  .system-config-sidebar .ant-menu {
+  .integrations-sidebar .ant-menu {
     min-width: 224px;
   }
 
-  .system-config-card .ant-card-head,
-  .system-config-card .ant-card-body {
+  .integrations-card .ant-card-head,
+  .integrations-card .ant-card-body {
     padding-right: 16px;
     padding-left: 16px;
   }
 
-  .system-config-readonly-grid {
+  .integrations-readonly-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .system-config-readonly-item.is-full-width {
+  .integrations-readonly-item.is-full-width {
     grid-column: auto;
   }
 }

@@ -7,7 +7,14 @@ interface UserSelectOption {
 
 export function formatOrderUserOption(user: OrderUserOption): UserSelectOption {
   const phone = [user.countryCode, user.phone].filter(Boolean).join(' ');
-  const name = user.fullName || user.displayName || user.username || user.email || phone || user.id;
+  const name =
+    user.fullName ||
+    user.displayName ||
+    (user as { profile?: { displayName?: string | null } }).profile?.displayName ||
+    user.username ||
+    user.email ||
+    phone ||
+    user.id;
   const details = [user.email, phone].filter(
     (item, index, all) => item && item !== name && all.indexOf(item) === index
   );

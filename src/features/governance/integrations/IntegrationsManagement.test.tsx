@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { SystemConfigManagement } from './SystemConfigManagement';
+import { IntegrationsManagement } from './IntegrationsManagement';
 
 const mocks = vi.hoisted(() => ({
   canWrite: true,
@@ -13,17 +13,17 @@ vi.mock('../../../shared/hooks/useAuth', () => ({
   useAuth: () => ({ checkPermission: () => mocks.canWrite }),
 }));
 
-vi.mock('./api/systemConfigApi', () => ({
-  systemConfigApi: {
-    listConfigs: mocks.listConfigs,
-    getConfig: mocks.getConfig,
-    updateConfig: vi.fn(),
-    testConfig: vi.fn(),
-    deleteConfig: vi.fn(),
+vi.mock('./api/integrationsApi', () => ({
+  integrationsApi: {
+    list: mocks.listConfigs,
+    get: mocks.getConfig,
+    update: vi.fn(),
+    test: vi.fn(),
+    remove: vi.fn(),
   },
 }));
 
-describe('SystemConfigManagement', () => {
+describe('IntegrationsManagement', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -46,10 +46,21 @@ describe('SystemConfigManagement', () => {
   beforeEach(() => {
     mocks.canWrite = true;
     mocks.listConfigs.mockResolvedValue(
-      ['mail', 'ai', 'tencent-meeting', 'lark', 'wechat-shop'].map((module) => ({
+      [
+        'mail',
+        'ai',
+        'tencent-meeting',
+        'lark',
+        'wechat-shop',
+        'wecom',
+        'storage',
+        'drive',
+        'file-scanning',
+        'stripe',
+      ].map((module) => ({
         orgId: 'org-1',
         module,
-        configured: module === 'mail',
+        configured: module === 'mail' || module === 'storage',
         source: module === 'mail' ? 'database' : 'default',
         updatedAt: null,
         environmentImportedAt: module === 'mail' ? '2026-09-01T00:00:00.000Z' : null,
@@ -109,13 +120,52 @@ describe('SystemConfigManagement', () => {
             encodingAesKey: '',
             apiBaseUrl: 'https://api.weixin.qq.com',
           },
+          wecom: {
+            corpId: 'ww123456789',
+            corpSecret: '********',
+            webhookToken: '********',
+            encodingAesKey: '********',
+            apiBaseUrl: 'https://qyapi.weixin.qq.com',
+          },
+          storage: {
+            provider: 'OSS',
+            region: 'oss-cn-hangzhou',
+            bucket: 'test-bucket',
+            accessKeyId: 'test-ak',
+            accessKeySecret: '********',
+            publicBaseUrl: 'https://cdn.example.com',
+            signedUrlExpiresSeconds: 600,
+          },
+          drive: {
+            allowedExtensions: ['.pdf', '.docx'],
+            imageMaxMiB: 20,
+            documentMaxMiB: 100,
+            audioMaxMiB: 2048,
+            videoMaxMiB: 20480,
+            downloadUrlExpiresSeconds: 600,
+            recycleRetentionDays: 30,
+          },
+          'file-scanning': {
+            malwareScanProvider: 'ALIYUN_SAS',
+            aliyunSasRegionId: 'cn-beijing',
+            scanTimeoutMs: 300000,
+            scanPollIntervalMs: 3000,
+            clamAvPort: 3310,
+            clamAvTimeoutMs: 600000,
+          },
+          stripe: {
+            secretKey: '********',
+            publishableKey: 'pk_test_123',
+            webhookSecret: '********',
+            currency: 'USD',
+          },
         }[module],
       })
     );
   });
 
   it('renders grouped service navigation and the Lark restart boundary', async () => {
-    render(<SystemConfigManagement />);
+    render(<IntegrationsManagement />);
 
     expect(await screen.findByText('邮件服务配置')).toBeInTheDocument();
     expect(screen.getByLabelText('查看配置说明')).toBeInTheDocument();
@@ -123,6 +173,7 @@ describe('SystemConfigManagement', () => {
     expect(screen.getByText('通知服务')).toBeInTheDocument();
     expect(screen.getByText('AI 能力')).toBeInTheDocument();
     expect(screen.getByText('会议集成')).toBeInTheDocument();
+    expect(screen.getByText('通讯与协同')).toBeInTheDocument();
     expect(screen.getByText('交易集成')).toBeInTheDocument();
     expect(screen.getByLabelText('只读配置详情')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -154,7 +205,7 @@ describe('SystemConfigManagement', () => {
 
   it('renders a content-only detail view without edit controls for read-only users', async () => {
     mocks.canWrite = false;
-    const { container } = render(<SystemConfigManagement />);
+    const { container } = render(<IntegrationsManagement />);
 
     expect(await screen.findByText('smtp.example.com')).toBeInTheDocument();
     expect(screen.getByLabelText('只读配置详情')).toBeInTheDocument();
@@ -185,7 +236,8 @@ describe('SystemConfigManagement', () => {
     expect(screen.getAllByText('已配置（不可查看）')).toHaveLength(3);
 
     await userEvent.click(screen.getByText('飞书'));
-    expect(await screen.findByText('应用与事件')).toBeInTheDocument();
+    expect(await screen.findByText('应用配置')).toBeInTheDocument();
+    expect(screen.getByText('事件订阅')).toBeInTheDocument();
     expect(screen.getByText('lark-app')).toBeInTheDocument();
 
     await userEvent.click(screen.getByText('微信小店'));
@@ -193,5 +245,58 @@ describe('SystemConfigManagement', () => {
     expect(screen.getByText('API 地址')).toBeInTheDocument();
     expect(screen.getByText('https://api.weixin.qq.com')).toBeInTheDocument();
     expect(screen.getAllByText('未配置').length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByText('企业微信'));
+    expect(await screen.findByText('企业凭证')).toBeInTheDocument();
+    expect(screen.getByText('ww123456789')).toBeInTheDocument();
+    expect(screen.getAllByText('已配置（不可查看）').length).toBeGreaterThan(0);
+  }, 15_000);
+
+  it('edits drive policies without unsupported connection test', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('云盘策略'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('drive'));
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText('允许扩展名')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '测试连接' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
+  }, 15_000);
+
+  it('displays and edits storage configurations with connection testing', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('对象存储'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('storage'));
+    expect(await screen.findByText('存储服务商')).toBeInTheDocument();
+    expect(screen.getByText('test-bucket')).toBeInTheDocument();
+    expect(screen.getByText('复用私有存储桶')).toBeInTheDocument();
+
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText(/私有存储桶/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/公共存储桶/)).toBeInTheDocument();
+    expect(screen.getByLabelText('AccessKey ID')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '测试连接' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
+  }, 15_000);
+
+  it('edits file scanning configurations', async () => {
+    const user = userEvent.setup();
+    render(<IntegrationsManagement />);
+    await user.click(await screen.findByText('病毒扫描'));
+    await waitFor(() => expect(mocks.getConfig).toHaveBeenCalledWith('file-scanning'));
+    await user.click(await screen.findByRole('button', { name: /编辑配置/ }));
+    expect(await screen.findByLabelText('扫描服务')).toBeInTheDocument();
+    await user.click(screen.getByRole('combobox', { name: '扫描服务' }));
+    await user.click(screen.getByText('ClamAV', { selector: '.ant-select-item-option-content' }));
+    expect(screen.getByLabelText('ClamAV 主机')).toBeVisible();
+    expect(screen.getByLabelText('阿里云地域')).not.toBeVisible();
+    await user.click(screen.getByRole('combobox', { name: '扫描服务' }));
+    await user.click(
+      screen.getByText('阿里云安全中心', { selector: '.ant-select-item-option-content' })
+    );
+    expect(screen.getByLabelText('阿里云地域')).toBeVisible();
+    expect(screen.getByLabelText('ClamAV 主机')).not.toBeVisible();
+    expect(screen.getByRole('button', { name: /保存配置/ })).toBeInTheDocument();
   }, 15_000);
 });

@@ -1,5 +1,6 @@
 import { mutator } from '../../../../shared/lib/api/mutator';
 import type {
+  BenefitCalculationPreview,
   CreateOrderRefund,
   OrderRefund,
   OrderRefundListData,
@@ -57,5 +58,13 @@ export const orderRefundApi = {
 
   delete(id: string): Promise<void> {
     return mutator<void>({ url: `/admin/order-refunds/${id}`, method: 'DELETE' });
+  },
+
+  previewCalculation(orderId: string, applyAt?: string): Promise<BenefitCalculationPreview> {
+    return mutator<BenefitCalculationPreview>({
+      url: '/admin/order-refunds/preview-calculation',
+      method: 'GET',
+      params: { orderId, applyAt: applyAt || undefined },
+    });
   },
 };

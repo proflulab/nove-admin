@@ -2,8 +2,11 @@ import type {
   AiConfig,
   LarkConfig,
   MailConfig,
+  StorageConfig,
+  StripeConfig,
   TencentMeetingConfig,
   WechatShopConfig,
+  WecomConfig,
 } from '../types';
 
 /**
@@ -33,6 +36,10 @@ export function buildWechatShopConfigPayload(values: WechatShopConfig): WechatSh
   return omitEmptySecrets(values, ['appSecret', 'webhookToken', 'encodingAesKey']);
 }
 
+export function buildWecomConfigPayload(values: WecomConfig): WecomConfig {
+  return omitEmptySecrets(values, ['corpSecret', 'webhookToken', 'encodingAesKey']);
+}
+
 export function buildAiConfigPayload(values: AiConfig): AiConfig {
   return omitEmptySecrets(values, ['apiKey']);
 }
@@ -45,4 +52,12 @@ export function buildTencentMeetingConfigPayload(
 
 export function buildLarkConfigPayload(values: LarkConfig): LarkConfig {
   return omitEmptySecrets(values, ['appSecret', 'eventEncryptKey', 'eventVerificationToken']);
+}
+
+export function buildStorageConfigPayload(values: StorageConfig): StorageConfig {
+  return omitEmptySecrets(values, ['accessKeySecret']);
+}
+
+export function buildStripeConfigPayload(values: StripeConfig): StripeConfig {
+  return omitEmptySecrets(values, ['secretKey', 'webhookSecret']);
 }
