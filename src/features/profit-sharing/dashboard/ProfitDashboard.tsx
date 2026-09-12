@@ -32,18 +32,35 @@ export const ProfitDashboard: React.FC = () => {
 
   // 1. 查询全员历史数据与成员列表
   const {
-    data: historicalData,
-    isLoading: isHistoricalLoading,
-    isFetching: isHistoricalFetching,
-    refetch: refetchHistorical,
+    data: allHistoricalData,
+    isLoading: isAllHistoricalLoading,
+    isFetching: isAllHistoricalFetching,
+    refetch: refetchAllHistorical,
   } = useQuery({
-    queryKey: ['profit-sharing-historical-stats', drilldownMemberId, monthsCount],
+    queryKey: ['profit-sharing-historical-stats', 'all', monthsCount],
+    queryFn: () => payslipApi.getHistoricalStats({ months: monthsCount }),
+  });
+
+  const members = allHistoricalData?.members || [];
+  const effectiveDrilldownId = drilldownMemberId || members[0]?.id || '';
+
+  // 个人透视必须使用独立的员工维度查询，避免复用全员汇总数据。
+  const {
+    data: memberHistoricalData,
+    isLoading: isMemberHistoricalLoading,
+    isFetching: isMemberHistoricalFetching,
+    refetch: refetchMemberHistorical,
+  } = useQuery({
+    queryKey: ['profit-sharing-historical-stats', 'member', effectiveDrilldownId, monthsCount],
     queryFn: () =>
       payslipApi.getHistoricalStats({
-        memberId: activeTab === 'DRILLDOWN' && drilldownMemberId ? drilldownMemberId : undefined,
+        memberId: effectiveDrilldownId,
         months: monthsCount,
       }),
+    enabled: activeTab === 'DRILLDOWN' && !!effectiveDrilldownId,
   });
+
+  const historicalData = activeTab === 'DRILLDOWN' ? memberHistoricalData : allHistoricalData;
 
   // 2. 查询单月经营统计
   const {
@@ -57,14 +74,21 @@ export const ProfitDashboard: React.FC = () => {
   });
 
   const handleRefresh = () => {
-    refetchHistorical();
+    refetchAllHistorical();
+    if (activeTab === 'DRILLDOWN' && effectiveDrilldownId) {
+      refetchMemberHistorical();
+    }
     refetchOps();
   };
 
-  const isRefreshing = isHistoricalFetching || isOpsFetching;
-  const isLoading = isHistoricalLoading || isOpsLoading;
+  const isRefreshing = isAllHistoricalFetching || isMemberHistoricalFetching || isOpsFetching;
+  const isLoading =
+    activeTab === 'OPERATIONS'
+      ? isOpsLoading
+      : isAllHistoricalLoading ||
+        (activeTab === 'DRILLDOWN' && !!effectiveDrilldownId && isMemberHistoricalLoading);
 
-  if (isLoading && !historicalData && !operationStatsData) {
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 320 }}>
         <Spin size="large" />
@@ -74,7 +98,6 @@ export const ProfitDashboard: React.FC = () => {
 
   const months = historicalData?.months || [];
   const memberSeries = historicalData?.memberSeries || [];
-  const members = historicalData?.members || [];
   const overall = historicalData?.overall || {
     totalGrossAmount: 0,
     totalSettledAmount: 0,
@@ -101,8 +124,7 @@ export const ProfitDashboard: React.FC = () => {
   };
 
   // 当前钻取选中的成员
-  const activeDrilldownMember = members.find((m) => m.id === drilldownMemberId) || members[0];
-  const effectiveDrilldownId = activeDrilldownMember?.id || '';
+  const activeDrilldownMember = members.find((m) => m.id === effectiveDrilldownId);
 
   // 从全员对比点击“单人透视”快捷跳转
   const handleSelectMemberForDrilldown = (memberId: string) => {
