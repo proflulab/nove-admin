@@ -134,6 +134,7 @@ const BINDING_PURPOSE_MAP: Record<string, string> = {
   TRANSCRIPT: '文本转写成果',
   SUMMARY: '会议纪要报告',
   AVATAR: '头像素材',
+  COVER: '项目封面',
 };
 
 export function DriveDetailModal({

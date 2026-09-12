@@ -3,13 +3,11 @@ import {
   EditOutlined,
   MinusCircleOutlined,
   PlusOutlined,
-  ProjectOutlined,
   ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import Alert from 'antd/es/alert';
-import Avatar from 'antd/es/avatar';
 import Button from 'antd/es/button';
 import Col from 'antd/es/col';
 import DatePicker from 'antd/es/date-picker';
@@ -41,6 +39,7 @@ import {
 import { PERMISSIONS } from '../../../shared/utils/permissions';
 import { productApi } from '../../transactions/products/api/productApi';
 import { projectApi } from '../api/projectApi';
+import { ProjectCoverAvatar, ProjectCoverPicker } from '../components/ProjectCoverPicker';
 import {
   buildProjectPayload,
   parseProjectMetadata,
@@ -291,13 +290,7 @@ export function ProjectManagement() {
       sorter: true,
       render: (_value, record) => (
         <div className="project-primary-cell">
-          <Avatar
-            className="project-primary-cell-avatar"
-            shape="square"
-            size={50}
-            src={record.image}
-            icon={!record.image ? <ProjectOutlined /> : undefined}
-          />
+          <ProjectCoverAvatar reference={record.image} />
           <div className="project-primary-cell-content">
             <div className="project-primary-cell-title-row">
               <Tooltip title={record.title}>
@@ -624,8 +617,8 @@ export function ProjectManagement() {
               </Form.Item>
             </Col>
             <Col span={24}>
-              <Form.Item name="image" label="封面路径或 URL">
-                <Input placeholder="/images/project.svg 或 https://..." />
+              <Form.Item name="image" label="项目封面">
+                <ProjectCoverPicker orgId={currentOrgId} />
               </Form.Item>
             </Col>
             <Col span={24}>
