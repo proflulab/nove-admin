@@ -59,6 +59,7 @@ export interface MemberRoleOption {
   avatar?: string | null;
   departmentNames: string[];
   roleIds: string[];
+  roleBindings?: { id: string; roleId: string }[];
 }
 export interface MemberRoleOptionParams {
   page?: number;

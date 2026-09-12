@@ -201,6 +201,12 @@ export function RoleManagement() {
   const [roleModalMode, setRoleModalMode] = useState<RoleModalMode>('create');
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [removal, setRemoval] = useState<{
+    orgId: string;
+    roleName: string;
+    members: MemberRoleOption[];
+    bindingIds: string[];
+  } | null>(null);
   const [permissionModalOpen, setPermissionModalOpen] = useState(false);
   const [permissionKeyword, setPermissionKeyword] = useState('');
   const [permissionResource, setPermissionResource] = useState('all');
@@ -385,6 +391,47 @@ export function RoleManagement() {
       message.error('添加角色成员失败');
     },
   });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async (request: NonNullable<typeof removal>) => {
+      const results = await Promise.allSettled(
+        request.bindingIds.map((id) => roleManagementApi.unbindMember(request.orgId, id))
+      );
+      return results.filter((result) => result.status === 'rejected').length;
+    },
+    onSuccess: async (failed, request) => {
+      if (failed) message.error(`有 ${failed} 条角色绑定移除失败，请刷新后重试`);
+      else message.success('已从角色中移除成员');
+      setRemoval(null);
+      setSelectedRowKeys([]);
+      setMemberPage(1);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['role-management-members', request.orgId] }),
+        queryClient.invalidateQueries({
+          queryKey: ['role-management-eligible-members', request.orgId],
+        }),
+      ]);
+    },
+  });
+
+  const requestRemoval = (members: MemberRoleOption[]) => {
+    if (!currentOrgId || !selectedRole || !members.length || selectedRole.code === 'SUPER_ADMIN')
+      return;
+    const bindingIds = members.flatMap((member) =>
+      (member.roleBindings || [])
+        .filter((binding) => binding.roleId === selectedRole.id)
+        .map((binding) => binding.id)
+    );
+    if (
+      members.some(
+        (member) => !member.roleBindings?.some((binding) => binding.roleId === selectedRole.id)
+      )
+    ) {
+      message.error('未获取到角色绑定信息，请刷新页面后重试');
+      return;
+    }
+    setRemoval({ orgId: currentOrgId, roleName: selectedRole.name, members, bindingIds });
+  };
 
   const updateRolePermissionsMutation = useMutation({
     mutationFn: ({ roleId, permissionIds }: { roleId: string; permissionIds: string[] }) =>
@@ -583,15 +630,17 @@ export function RoleManagement() {
       key: 'action',
       width: 72,
       render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          onClick={() => {
-            message.info(`${getMemberName(record)} 已在当前角色中`);
-          }}
-        >
-          编辑
-        </Button>
+        <Perm permission={PERMISSIONS.ROLE.UPDATE}>
+          <Button
+            type="link"
+            danger
+            size="small"
+            disabled={selectedRole?.code === 'SUPER_ADMIN'}
+            onClick={() => requestRemoval([record])}
+          >
+            移除
+          </Button>
+        </Perm>
       ),
     },
   ];
@@ -748,6 +797,7 @@ export function RoleManagement() {
                   value={memberKeyword}
                   onChange={(event) => {
                     setMemberKeyword(event.target.value);
+                    setSelectedRowKeys([]);
                     setMemberPage(1);
                   }}
                 />
@@ -789,20 +839,37 @@ export function RoleManagement() {
                   >
                     <Button>批量导入/导出</Button>
                   </Dropdown>
-                  <Tooltip title="当前接口未返回角色绑定 ID，暂不能从角色中移除成员">
-                    <span>
-                      <Button disabled>移除成员</Button>
-                    </span>
-                  </Tooltip>
+                  <Perm permission={PERMISSIONS.ROLE.UPDATE}>
+                    <Button
+                      danger
+                      disabled={selectedRole.code === 'SUPER_ADMIN' || !selectedRowKeys.length}
+                      onClick={() =>
+                        requestRemoval(
+                          roleMembers.filter((member) => selectedRowKeys.includes(member.id))
+                        )
+                      }
+                    >
+                      移除成员{selectedRowKeys.length ? `（${selectedRowKeys.length}）` : ''}
+                    </Button>
+                  </Perm>
                 </Space>
               </div>
 
+              {selectedRole.code === 'SUPER_ADMIN' && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message="超级管理员受保护，不支持在此移除。"
+                  style={{ marginBottom: 12 }}
+                />
+              )}
               <Table
                 columns={memberColumns}
                 dataSource={roleMembers}
                 rowKey="id"
                 loading={membersQuery.isLoading || membersQuery.isFetching}
                 rowSelection={{
+                  getCheckboxProps: () => ({ disabled: selectedRole.code === 'SUPER_ADMIN' }),
                   selectedRowKeys,
                   onChange: setSelectedRowKeys,
                 }}
@@ -811,7 +878,10 @@ export function RoleManagement() {
                   pageSize: membersQuery.data?.pageSize || 20,
                   total: membersQuery.data?.total || 0,
                   showSizeChanger: false,
-                  onChange: setMemberPage,
+                  onChange: (page) => {
+                    setMemberPage(page);
+                    setSelectedRowKeys([]);
+                  },
                 }}
                 locale={{
                   emptyText: (
@@ -827,6 +897,24 @@ export function RoleManagement() {
           )}
         </main>
       </div>
+
+      <Modal
+        title={`从「${removal?.roleName || ''}」移除成员`}
+        open={!!removal}
+        onCancel={() => {
+          if (!removeMemberMutation.isPending) setRemoval(null);
+        }}
+        onOk={() => {
+          if (removal) removeMemberMutation.mutate(removal);
+        }}
+        confirmLoading={removeMemberMutation.isPending}
+        okText="确认移除"
+        okButtonProps={{ danger: true }}
+        cancelText="取消"
+      >
+        <p>将移除 {removal?.members.map(getMemberName).join('、')} 的此角色权限。</p>
+        <p>成员仍保留在组织中，其他角色不受影响。</p>
+      </Modal>
 
       <Modal
         title={roleModalMode === 'edit' ? '编辑角色' : '新增角色'}
