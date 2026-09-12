@@ -24,6 +24,7 @@ interface AuthState {
   checkPermission: (permission: string) => boolean;
   initialize: () => Promise<void>;
   clearAuth: () => void;
+  setUser: (user: User | null) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -43,11 +44,10 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const userData = await getMe();
-          authService.setUser(userData);
           set({ user: userData, isAuthenticated: true, loading: false });
         } catch (error) {
           console.error('Failed to fetch user data:', error);
-          authService.clear();
+          authService.removeToken();
           set({ isAuthenticated: false, loading: false });
         }
       },
@@ -58,11 +58,10 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const userData = await getMe();
-          authService.setUser(userData);
           set({ user: userData, isAuthenticated: true });
         } catch (error) {
           console.error('Failed to fetch user data after login:', error);
-          authService.clear();
+          authService.removeToken();
           set({ isAuthenticated: false });
           throw error;
         }
@@ -74,7 +73,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Logout error:', error);
         } finally {
-          authService.clear();
+          authService.removeToken();
           set({ user: null, isAuthenticated: false });
         }
       },
@@ -84,8 +83,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearAuth: () => {
-        authService.clear();
+        authService.removeToken();
         set({ user: null, isAuthenticated: false });
+      },
+
+      setUser: (user: User | null) => {
+        set({ user });
       },
     }),
     {
