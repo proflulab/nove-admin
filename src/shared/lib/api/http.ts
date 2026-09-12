@@ -108,7 +108,7 @@ http.interceptors.response.use(
         setAuthorizationHeader(originalRequest, accessToken);
         return http(originalRequest);
       } catch (refreshError) {
-        authService.clear();
+        authService.removeToken();
         window.dispatchEvent(new Event('auth-unauthorized'));
         return Promise.reject(refreshError);
       }

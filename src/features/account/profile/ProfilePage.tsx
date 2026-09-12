@@ -32,7 +32,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { getMe } from '../../auth/api/api';
-import { authService } from '../../auth/api/service';
 import { useAuthStore } from '../../auth/model/authStore';
 import type { User } from '../../auth/model/types';
 import {
@@ -152,8 +151,7 @@ export function ProfilePage() {
 
     try {
       const refreshedUser = await getMe();
-      authService.setUser(refreshedUser);
-      useAuthStore.setState({ user: refreshedUser });
+      useAuthStore.getState().setUser(refreshedUser);
     } catch {
       await queryClient.invalidateQueries({ queryKey: profileQueryKey });
     }

@@ -8,7 +8,36 @@ export function getDeviceId(): string {
   return id;
 }
 
+interface NavigatorWithUAData extends Navigator {
+  userAgentData?: {
+    platform: string;
+  };
+}
+
 export function getDeviceInfo(): string {
-  const platform = navigator.platform || '未知系统';
-  return `Web · ${platform}`;
+  if (typeof navigator === 'undefined') {
+    return 'Web · 未知系统';
+  }
+
+  const uaDataPlatform = (navigator as NavigatorWithUAData).userAgentData?.platform;
+  if (uaDataPlatform) {
+    return `Web · ${uaDataPlatform}`;
+  }
+
+  const ua = navigator.userAgent || '';
+  let os = '未知系统';
+
+  if (/Android/i.test(ua)) {
+    os = 'Android';
+  } else if (/iPhone|iPad|iPod/i.test(ua)) {
+    os = 'iOS';
+  } else if (/Windows/i.test(ua)) {
+    os = 'Windows';
+  } else if (/Macintosh|Mac OS X/i.test(ua)) {
+    os = 'macOS';
+  } else if (/Linux/i.test(ua)) {
+    os = 'Linux';
+  }
+
+  return `Web · ${os}`;
 }

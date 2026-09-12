@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   deleteAvatar: vi.fn(),
   getMe: vi.fn(),
   setUser: vi.fn(),
-  setAuthState: vi.fn(),
   user: {
     id: 'user-1',
     email: 'yangshiming@proflu.cn',
@@ -46,11 +45,12 @@ vi.mock('antd-img-crop', () => ({
 }));
 
 vi.mock('../../auth/api/api', () => ({ getMe: mocks.getMe }));
-vi.mock('../../auth/api/service', () => ({ authService: { setUser: mocks.setUser } }));
 vi.mock('../../auth/model/authStore', () => ({
   useAuthStore: Object.assign(
     (selector: (state: { user: typeof mocks.user }) => unknown) => selector({ user: mocks.user }),
-    { setState: mocks.setAuthState }
+    {
+      getState: () => ({ setUser: mocks.setUser }),
+    }
   ),
 }));
 
@@ -176,7 +176,6 @@ describe('ProfilePage', () => {
     await waitFor(() => {
       expect(mocks.getMe).toHaveBeenCalled();
       expect(mocks.setUser).toHaveBeenCalledWith(mocks.user);
-      expect(mocks.setAuthState).toHaveBeenCalledWith({ user: mocks.user });
       expect(container.querySelector('.profile-avatar img')).toHaveAttribute(
         'src',
         'https://cdn.example.com/avatars/user-1/new.webp'
