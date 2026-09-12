@@ -93,27 +93,54 @@
   gap: 8px;
 }
 
-.minute-transcript-list,
 .minute-participant-list {
   display: grid;
   gap: 10px;
   margin: 14px 0;
 }
 
+.minute-transcript-list {
+  display: grid;
+  margin: 8px 0;
+}
+
 .minute-transcript-segment {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid #edf0f4;
-  border-radius: 10px;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 4px;
+}
+
+.minute-transcript-segment + .minute-transcript-segment {
+  border-top: 1px solid #f0f2f5;
 }
 
 .minute-transcript-meta {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 5px;
+  gap: 12px;
+  margin-bottom: 2px;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.minute-transcript-meta strong {
+  color: #526078;
+  overflow-wrap: anywhere;
+}
+
+.minute-transcript-meta span {
+  flex-shrink: 0;
   color: #7c8799;
+  font-variant-numeric: tabular-nums;
+}
+
+.minute-transcript-text {
+  color: #30394a;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .minute-participant-toolbar .ant-input-search {
