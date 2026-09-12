@@ -12,6 +12,7 @@ import Layout from 'antd/es/layout';
 import Dropdown from 'antd/es/dropdown';
 import Avatar from 'antd/es/avatar';
 import Space from 'antd/es/space';
+import message from 'antd/es/message';
 import { SafetyOutlined, UserOutlined, LogoutOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
@@ -44,7 +45,11 @@ export function Topbar({ collapsed, sidebarWidth }: TopbarProps) {
       icon: <LogoutOutlined />,
       label: '退出登录',
       onClick: async () => {
-        await logout();
+        try {
+          await logout();
+        } catch {
+          message.error('登出失败，请检查网络后重试');
+        }
       },
     },
   ];
