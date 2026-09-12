@@ -49,6 +49,16 @@ const SOURCE_LABELS = {
   THIRD_PARTY: '第三方录制',
 } as const;
 
+const SPEAKER_COLORS = ['#4263b5', '#087f8c', '#8752a1', '#b56527', '#27805b', '#b34f72'];
+
+function speakerColor(identity: string) {
+  let hash = 0;
+  for (const character of identity) {
+    hash = (Math.imul(hash, 31) + character.codePointAt(0)!) | 0;
+  }
+  return SPEAKER_COLORS[(hash >>> 0) % SPEAKER_COLORS.length];
+}
+
 function participantName(participant: MeetingParticipant) {
   return (
     participant.user?.profile?.displayName ||
@@ -428,13 +438,26 @@ export function MinuteDetail() {
             '未知发言人';
           return (
             <div className="minute-transcript-segment" key={segment.id}>
-              <Avatar size={30}>{speakerName.slice(0, 1)}</Avatar>
+              <Avatar
+                size={26}
+                style={{
+                  backgroundColor: speakerColor(
+                    segment.user?.id
+                      ? 'user:' + segment.user.id
+                      : segment.platformUser?.id
+                        ? 'platform:' + segment.platformUser.id
+                        : 'name:' + speakerName
+                  ),
+                }}
+              >
+                {Array.from(speakerName)[0]}
+              </Avatar>
               <div>
                 <div className="minute-transcript-meta">
                   <strong>{speakerName}</strong>
                   <span>{segment.startTime}</span>
                 </div>
-                <div>{segment.text}</div>
+                <div className="minute-transcript-text">{segment.text}</div>
               </div>
             </div>
           );
