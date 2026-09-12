@@ -136,6 +136,12 @@ export const driveApi = {
       method: 'DELETE',
     }),
 
+  createPreviewUrl: (fileId: string) =>
+    mutator<{ url: string; expiresInSeconds: number }>({
+      url: `/drive/files/${fileId}/preview-url`,
+      method: 'POST',
+    }),
+
   createDownloadUrl: (fileId: string) =>
     mutator<{ url: string; expiresInSeconds: number }>({
       url: `/drive/files/${fileId}/download-url`,
