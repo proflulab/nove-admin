@@ -6,6 +6,11 @@ export const PERMISSIONS = {
     DELETE: 'user:delete',
     RESET_PASSWORD: 'user:reset-password',
   },
+  IDENTITY_DOCUMENT: {
+    READ: 'identity-document:read',
+    WRITE: 'identity-document:write',
+    REVIEW: 'identity-document:review',
+  },
   ROLE: {
     READ: 'role:read',
     CREATE: 'role:create',

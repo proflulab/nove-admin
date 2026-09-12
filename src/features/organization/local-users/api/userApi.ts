@@ -1,6 +1,9 @@
 import { mutator } from '../../../../shared/lib/api/mutator';
 import type {
   AdminUser,
+  DocumentVerifyStatus,
+  IdentityDocument,
+  IdentityDocumentWritePayload,
   UserImportResponse,
   UserListParams,
   UserListResponse,
@@ -45,6 +48,56 @@ export const userApi = {
       method: 'POST',
       data,
       timeout: 60_000,
+    });
+  },
+
+  listIdentityDocuments(userId: string): Promise<IdentityDocument[]> {
+    return mutator({ url: `/admin/users/${userId}/identity-documents`, method: 'GET' });
+  },
+
+  createIdentityDocument(
+    userId: string,
+    data: IdentityDocumentWritePayload
+  ): Promise<IdentityDocument> {
+    return mutator({ url: `/admin/users/${userId}/identity-documents`, method: 'POST', data });
+  },
+
+  updateIdentityDocument(
+    userId: string,
+    documentId: string,
+    data: IdentityDocumentWritePayload
+  ): Promise<IdentityDocument> {
+    return mutator({
+      url: `/admin/users/${userId}/identity-documents/${documentId}`,
+      method: 'PATCH',
+      data,
+    });
+  },
+
+  submitIdentityDocument(userId: string, documentId: string): Promise<IdentityDocument> {
+    return mutator({
+      url: `/admin/users/${userId}/identity-documents/${documentId}/submit`,
+      method: 'POST',
+    });
+  },
+
+  reviewIdentityDocument(
+    userId: string,
+    documentId: string,
+    status: Extract<DocumentVerifyStatus, 'VERIFIED' | 'REJECTED'>,
+    rejectReason?: string
+  ): Promise<IdentityDocument> {
+    return mutator({
+      url: `/admin/users/${userId}/identity-documents/${documentId}/review`,
+      method: 'POST',
+      data: { status, rejectReason },
+    });
+  },
+
+  deleteIdentityDocument(userId: string, documentId: string): Promise<void> {
+    return mutator({
+      url: `/admin/users/${userId}/identity-documents/${documentId}`,
+      method: 'DELETE',
     });
   },
 };

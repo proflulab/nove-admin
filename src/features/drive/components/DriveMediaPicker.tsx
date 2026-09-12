@@ -2,6 +2,7 @@ import './DriveMediaPicker.css';
 import {
   CloudOutlined,
   DeleteOutlined,
+  FileProtectOutlined,
   FolderOpenOutlined,
   PictureOutlined,
   UploadOutlined,
@@ -26,11 +27,13 @@ import { useProjectCoverUrl } from '../../projects/hooks/useProjectCoverUrl';
 
 const PART_SIZE = 16 * 1024 * 1024;
 
-function isImage(node: DriveNode, mediaType: 'image' | 'video'): boolean {
+function isAllowedMedia(node: DriveNode, mediaType: 'image' | 'video' | 'document'): boolean {
   return (
     node.type === 'FILE' &&
     Boolean(node.fileId) &&
-    Boolean(node.contentType?.startsWith(`${mediaType}/`))
+    (mediaType === 'document'
+      ? Boolean(node.contentType?.startsWith('image/')) || node.contentType === 'application/pdf'
+      : Boolean(node.contentType?.startsWith(`${mediaType}/`)))
   );
 }
 
@@ -41,7 +44,7 @@ async function calculateSha256(file: File): Promise<string> {
   );
 }
 
-async function uploadImage(
+async function uploadMedia(
   spaceId: string,
   parentId: string | null,
   file: File
@@ -93,7 +96,7 @@ export interface DriveMediaPickerProps {
   value?: string;
   onChange?: (value?: string) => void;
   orgId: string;
-  mediaType?: 'image' | 'video';
+  mediaType?: 'image' | 'video' | 'document';
   label?: string;
   entityLabel?: string;
 }
@@ -106,8 +109,8 @@ export function DriveMediaPicker({
   label = '项目封面',
   entityLabel = '项目',
 }: DriveMediaPickerProps) {
-  const maxSizeMb = mediaType === 'image' ? 10 : 200;
-  const mediaLabel = mediaType === 'image' ? '图片' : '视频';
+  const maxSizeMb = mediaType === 'image' ? 10 : mediaType === 'video' ? 200 : 20;
+  const mediaLabel = mediaType === 'image' ? '图片' : mediaType === 'video' ? '视频' : '文件';
   const [open, setOpen] = useState(false);
   const [spaces, setSpaces] = useState<DriveSpace[]>([]);
   const [spaceId, setSpaceId] = useState<string>();
@@ -149,7 +152,9 @@ export function DriveMediaPicker({
     setLoading(true);
     try {
       const result = await driveApi.listNodes(spaceId, parentId);
-      setNodes(result.items.filter((node) => node.type === 'FOLDER' || isImage(node, mediaType)));
+      setNodes(
+        result.items.filter((node) => node.type === 'FOLDER' || isAllowedMedia(node, mediaType))
+      );
     } catch {
       message.error('读取云盘目录失败');
     } finally {
@@ -169,8 +174,12 @@ export function DriveMediaPicker({
   };
 
   const beforeUpload = async (file: File) => {
-    if (!file.type.startsWith(`${mediaType}/`)) {
-      message.error(`仅支持${mediaLabel}文件`);
+    const allowed =
+      mediaType === 'document'
+        ? file.type.startsWith('image/') || file.type === 'application/pdf'
+        : file.type.startsWith(`${mediaType}/`);
+    if (!allowed) {
+      message.error(mediaType === 'document' ? '仅支持图片或 PDF' : `仅支持${mediaLabel}文件`);
       return Upload.LIST_IGNORE;
     }
     if (file.size > maxSizeMb * 1024 * 1024) {
@@ -194,7 +203,7 @@ export function DriveMediaPicker({
           ? await driveApi.rename(legacyFolder.id, label)
           : await driveApi.createFolder(spaceId, null, label);
       }
-      const node = await uploadImage(spaceId, folder.id, file);
+      const node = await uploadMedia(spaceId, folder.id, file);
       if (!node.fileId) throw new Error('上传完成后未返回云盘文件标识');
       onChange?.(toDriveFileReference(node.fileId));
       setOpen(false);
@@ -217,7 +226,14 @@ export function DriveMediaPicker({
         className="project-cover-preview"
         style={mediaType === 'video' ? { width: 240, height: 135 } : undefined}
       >
-        {previewUrl ? (
+        {mediaType === 'document' ? (
+          <div
+            className="drive-document-reference"
+            title={value ? '已选择证件文件' : '尚未选择证件文件'}
+          >
+            <FileProtectOutlined />
+          </div>
+        ) : previewUrl ? (
           mediaType === 'video' ? (
             <video
               src={previewUrl}
@@ -251,8 +267,12 @@ export function DriveMediaPicker({
         ) : null}
       </Space>
       <span className="project-cover-help">
-        {mediaType === 'image' ? '支持 JPG、PNG、WebP、GIF、SVG' : '支持 MP4、MOV、WebM'}，最大{' '}
-        {maxSizeMb} MB；保存{entityLabel}后自动归档并关联
+        {mediaType === 'image'
+          ? '支持 JPG、PNG、WebP、GIF、SVG'
+          : mediaType === 'video'
+            ? '支持 MP4、MOV、WebM'
+            : '支持图片或 PDF'}
+        ，最大 {maxSizeMb} MB；保存{entityLabel}后自动归档并关联
       </span>
 
       <Modal
@@ -302,7 +322,13 @@ export function DriveMediaPicker({
                 ]}
               />
               <Upload
-                accept={mediaType === 'image' ? 'image/*' : '.mp4,.mov,.webm'}
+                accept={
+                  mediaType === 'image'
+                    ? 'image/*'
+                    : mediaType === 'video'
+                      ? '.mp4,.mov,.webm'
+                      : 'image/*,.pdf'
+                }
                 showUploadList={false}
                 beforeUpload={beforeUpload}
               >
