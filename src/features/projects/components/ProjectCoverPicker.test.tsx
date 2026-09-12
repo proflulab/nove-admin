@@ -6,7 +6,7 @@ import { ProjectCoverPicker } from './ProjectCoverPicker';
 const mocks = vi.hoisted(() => ({
   listSpaces: vi.fn(),
   listNodes: vi.fn(),
-  createDownloadUrl: vi.fn(),
+  createPreviewUrl: vi.fn(),
 }));
 
 vi.mock('../../drive/api/driveApi', () => ({
