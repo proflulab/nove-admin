@@ -230,18 +230,6 @@ export function OrderManagement() {
     },
   });
 
-  const statusMutation = useTableMutation({
-    queryKey: 'orders',
-    mutationFn: ({ id, status }: { id: string; status: OrderStatus }) =>
-      orderApi.updateStatus(id, status),
-    onSuccess: () => {
-      message.success('订单状态已更新');
-    },
-    onError: () => {
-      message.error('更新订单状态失败');
-    },
-  });
-
   const deleteMutation = useTableDeleteMutation({
     queryKey: 'orders',
     mutationFn: orderApi.delete,
@@ -429,26 +417,9 @@ export function OrderManagement() {
       key: 'status',
       width: 130,
       sorter: true,
-      render: (status: OrderStatus, record) => {
+      render: (status: OrderStatus) => {
         const meta = getStatusMeta(status);
-        return (
-          <Perm
-            permission={PERMISSIONS.ORDER.STATUS}
-            fallback={<Tag color={meta.color}>{meta.label}</Tag>}
-          >
-            <Select
-              size="small"
-              value={status}
-              options={ORDER_STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
-              style={{ width: 104 }}
-              disabled={statusMutation.isPending}
-              onClick={(event) => event.stopPropagation()}
-              onChange={(nextStatus) =>
-                statusMutation.mutate({ id: record.id, status: nextStatus })
-              }
-            />
-          </Perm>
-        );
+        return <Tag color={meta.color}>{meta.label}</Tag>;
       },
     },
     {

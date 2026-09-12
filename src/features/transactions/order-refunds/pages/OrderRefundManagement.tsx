@@ -38,6 +38,7 @@ import {
 import { PERMISSIONS } from '../../../../shared/utils/permissions';
 import { orderRefundApi } from '../api/orderRefundApi';
 import { RefundOrderSelect } from '../components/RefundOrderSelect';
+import { ParentRefundSelect } from '../components/ParentRefundSelect';
 import { StripeRefundSyncModal } from '../components/StripeRefundSyncModal';
 import { stripeRefundSyncApi } from '../api/stripeRefundSyncApi';
 import type {
@@ -79,7 +80,6 @@ interface RefundFormValues {
   applicantName?: string;
   financialNote?: string;
   parentId?: string;
-  productCategory?: string;
   submittedAt?: Dayjs;
 }
 
@@ -99,7 +99,6 @@ function buildPayload(values: RefundFormValues): CreateOrderRefund {
     applicantName: clean(values.applicantName),
     financialNote: clean(values.financialNote),
     parentId: clean(values.parentId),
-    productCategory: clean(values.productCategory),
     submittedAt: values.submittedAt?.toISOString(),
   };
 }
@@ -247,7 +246,6 @@ export function OrderRefundManagement() {
       applicantName: record.applicantName ?? undefined,
       financialNote: record.financialNote ?? undefined,
       parentId: record.parentId ?? undefined,
-      productCategory: record.productCategory ?? undefined,
       submittedAt: record.submittedAt ? dayjs(record.submittedAt) : undefined,
     });
     if (record.orderId) {
@@ -622,17 +620,12 @@ export function OrderRefundManagement() {
                 <InputNumber min={0} precision={0} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="applicantName" label="申请人">
                 <Input />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="productCategory" label="产品类别">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="submittedAt" label="提交时间">
                 <DatePicker showTime style={{ width: '100%' }} />
               </Form.Item>
@@ -647,8 +640,8 @@ export function OrderRefundManagement() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="parentId" label="父退款记录 ID">
-                <Input />
+              <Form.Item name="parentId" label="父退款记录">
+                <ParentRefundSelect excludeId={editing?.id} />
               </Form.Item>
             </Col>
             <Col span={24}>

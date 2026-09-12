@@ -192,14 +192,6 @@ export function ProjectManagement() {
     onError: (error) => message.error(getErrorMessage(error, '项目更新失败')),
   });
 
-  const statusMutation = useTableMutation({
-    queryKey: `projects-${currentOrgId ?? 'missing'}`,
-    mutationFn: ({ id, status }: { id: string; status: ProjectStatus }) =>
-      projectApi.updateStatus(id, status),
-    onSuccess: () => message.success('项目状态已更新'),
-    onError: (error) => message.error(getErrorMessage(error, '项目状态更新失败')),
-  });
-
   const deleteMutation = useTableDeleteMutation({
     queryKey: `projects-${currentOrgId ?? 'missing'}`,
     mutationFn: projectApi.delete,
@@ -388,25 +380,9 @@ export function ProjectManagement() {
       dataIndex: 'status',
       key: 'status',
       width: 130,
-      render: (status: ProjectStatus, record) => {
+      render: (status: ProjectStatus) => {
         const meta = statusMeta(status);
-        return (
-          <Perm
-            permission={PERMISSIONS.PROJECT.TOGGLE_STATUS}
-            fallback={<Tag color={meta.color}>{meta.label}</Tag>}
-          >
-            <Select
-              size="small"
-              value={status}
-              style={{ width: 105 }}
-              options={STATUS_OPTIONS.map(({ label, value }) => ({ label, value }))}
-              loading={statusMutation.isPending && statusMutation.variables?.id === record.id}
-              onChange={(nextStatus) =>
-                statusMutation.mutate({ id: record.id, status: nextStatus })
-              }
-            />
-          </Perm>
-        );
+        return <Tag color={meta.color}>{meta.label}</Tag>;
       },
     },
     {

@@ -40,6 +40,10 @@ export const orderRefundApi = {
     };
   },
 
+  get(id: string): Promise<OrderRefund> {
+    return mutator<OrderRefund>({ url: `/admin/order-refunds/${id}`, method: 'GET' });
+  },
+
   create(data: CreateOrderRefund): Promise<OrderRefund> {
     return mutator<OrderRefund>({ url: '/admin/order-refunds', method: 'POST', data });
   },
