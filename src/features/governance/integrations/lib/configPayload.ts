@@ -3,6 +3,7 @@ import type {
   LarkConfig,
   MailConfig,
   StorageConfig,
+  StripeConfig,
   TencentMeetingConfig,
   WechatShopConfig,
   WecomConfig,
@@ -55,4 +56,8 @@ export function buildLarkConfigPayload(values: LarkConfig): LarkConfig {
 
 export function buildStorageConfigPayload(values: StorageConfig): StorageConfig {
   return omitEmptySecrets(values, ['accessKeySecret']);
+}
+
+export function buildStripeConfigPayload(values: StripeConfig): StripeConfig {
+  return omitEmptySecrets(values, ['secretKey', 'webhookSecret']);
 }
